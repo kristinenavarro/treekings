@@ -1,0 +1,301 @@
+  :root {
+    --bg: #F7F3EA;
+    --surface: #FFFFFF;
+    --nav: #12355B;
+    --accent: #8B5E3C;
+    --muted: #6B6B6B;
+    --text: #222222;
+    --danger: #C0392B;
+    --success: #27AE60;
+    --radius: 14px;
+    --shadow: 0 15px 35px rgba(18, 53, 91, 0.15);
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: "Source Sans 3", "Segoe UI", system-ui, -apple-system;
+    background: radial-gradient(circle at top left, #fff8ec, var(--bg));
+    color: var(--text);
+  }
+
+  .shell {
+    width: 100%;
+    max-width: 480px;
+    background: var(--surface);
+    border-radius: 24px;
+    box-shadow: var(--shadow);
+    padding: 32px 32px 36px;
+    animation: fadeIn 0.5s ease;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .left {
+    width: 100%;
+  }
+
+  .brand {
+    font-weight: 800;
+    font-size: 1.4rem;
+    color: var(--nav);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .brand .icon {
+    color: var(--accent);
+    font-size: 1.8rem;
+  }
+
+  .left h1 {
+    font-size: 1.9rem;
+    margin-bottom: 8px;
+    color: var(--nav);
+  }
+
+  .left p {
+    color: var(--muted);
+    margin-bottom: 20px;
+    max-width: 26rem;
+    line-height: 1.5;
+  }
+
+  .role-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 18px;
+  }
+
+  .role-tab {
+    flex: 1;
+    border-radius: 999px;
+    padding: 10px 12px;
+    border: 1px solid rgba(18, 53, 91, 0.18);
+    background: #FAFBFA;
+    color: var(--muted);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+  }
+
+  .role-tab:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+  }
+
+  .role-tab.active {
+    background: var(--nav);
+    color: #fff;
+    border-color: var(--nav);
+    box-shadow: 0 10px 25px rgba(18, 53, 91, 0.25);
+  }
+
+  .toggle-auth {
+    font-size: 0.9rem;
+    margin-bottom: 16px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .toggle-auth button {
+    border: none;
+    background: none;
+    color: var(--accent);
+    font-weight: 600;
+    cursor: pointer;
+    transition: color 0.2s;
+  }
+
+  .toggle-auth button:hover {
+    color: var(--nav);
+    text-decoration: underline;
+  }
+
+  form {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--nav);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  label svg {
+    color: var(--accent);
+    width: 20px;
+    text-align: center;
+  }
+
+  .input-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .input-container svg {
+    position: absolute;
+    left: 14px;
+    color: var(--muted);
+    font-size: 1.1rem;
+    pointer-events: none;
+  }
+
+  /* FIXED: Input styles - added color property */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"] {
+    width: 100%;
+    padding: 12px 12px 12px 45px;
+    border-radius: 10px;
+    border: 1px solid rgba(18, 53, 91, 0.18);
+    background: #FAFBFA;
+    font-size: 0.95rem;
+    color: var(--text); /* ADDED THIS LINE */
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  input::placeholder {
+    color: var(--muted);
+    opacity: 0.7;
+  }
+
+  input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(139, 94, 60, 0.18);
+    background: #fff;
+  }
+
+  input:focus + svg {
+    color: var(--accent);
+  }
+
+  .actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .primary-btn {
+    border: none;
+    border-radius: 999px;
+    padding: 12px 16px;
+    background: var(--nav);
+    color: #fff;
+    font-weight: 700;
+    cursor: pointer;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: all 0.3s ease;
+  }
+
+  .primary-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 25px rgba(18, 53, 91, 0.25);
+    background: #0f2c4a;
+  }
+
+  .primary-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+
+  .primary-btn svg {
+    font-size: 1.1rem;
+  }
+
+  .helper {
+    font-size: 0.85rem;
+    color: var(--muted);
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+  }
+
+  .helper svg {
+    color: var(--accent);
+    margin-right: 5px;
+  }
+
+  .helper strong {
+    color: var(--accent);
+  }
+
+  .error {
+    margin-top: 6px;
+    font-size: 0.85rem;
+    min-height: 1em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .error svg {
+    font-size: 0.9rem;
+  }
+
+  .success {
+    color: var(--success);
+  }
+
+  .danger {
+    color: var(--danger);
+  }
+
+  @media (max-width: 840px) {
+    .shell {
+      max-width: 100%;
+      margin: 0 16px;
+      padding: 24px;
+    }
+    
+    .role-tabs {
+      flex-direction: column;
+    }
+  }
