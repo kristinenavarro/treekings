@@ -2,48 +2,67 @@ import React, { useState, useEffect } from 'react';
 import './AdminDashboard.css';
 
 const AdminDashboard = () => {
-  // Initial student data
-  const initialStudents = [
-    { id: 1, name: "Tin Dela Cruz", course: "STEM Strand", status: "Active" },
-    { id: 2, name: "Josh Lim", course: "BS Information Technology", status: "Active" },
-    { id: 3, name: "Ava Ramos", course: "ABM Strand", status: "On Leave" },
-    { id: 4, name: "Mika Rivera", course: "BS Accountancy", status: "Active" }
-  ];
-
-  // Initial book data
-  const initialBooks = [
-    { id: 1, isbn: "978-1-60309-452-8", title: "Belzebubs", author: "JP Ahonen", status: "Available" },
-    { id: 2, isbn: "978-0-545-01022-1", title: "Harry Potter and the Deathly Hallows", author: "J.K. Rowling", status: "Borrowed" },
-    { id: 3, isbn: "978-0-06-231500-7", title: "The Alchemist", author: "Paulo Coelho", status: "Available" }
-  ];
-
   // State management
-  const [students, setStudents] = useState(initialStudents);
-  const [books, setBooks] = useState(initialBooks);
+  const [students, setStudents] = useState([]);
+  const [books, setBooks] = useState([]);
   const [editingStudent, setEditingStudent] = useState(null);
   const [editingBook, setEditingBook] = useState(null);
   const [notification, setNotification] = useState({ show: false, message: '', type: '' });
 
+ useEffect(() => {
+  const fetchData = async () => {
+    try {
+      const studentRes = await fetch("http://localhost:5000/api/students");
+      const bookRes = await fetch("http://localhost:5000/api/books");
+
+      const studentData = await studentRes.json();
+      const bookData = await bookRes.json();
+
+      // Ensure we set arrays, fallback to empty array if response is unexpected
+      setStudents(Array.isArray(studentData.data) ? studentData.data : []);
+      setBooks(Array.isArray(bookData.data) ? bookData.data : []);
+
+    } catch (error) {
+      console.error("Error fetching admin data:", error);
+      // fallback empty arrays
+      setStudents([]);
+      setBooks([]);
+    }
+  };
+
+  fetchData();
+}, []);
+
+
   // Student form state
   const [studentForm, setStudentForm] = useState({
     name: '',
-    course: '',
-    status: 'Active'
+    email: '',
+    password: '',
+    studentId: '',
+    department: '',
+    yearLevel: ''
   });
 
-  // Book form state
-  const [bookForm, setBookForm] = useState({
-    isbn: '',
-    title: '',
-    author: '',
-    status: 'Available'
-  });
+// Book form state
+const [bookForm, setBookForm] = useState({
+  isbn: '',
+  title: '',
+  author: '',
+  status: 'available',
+  category: 'all',
+  genre: '',
+  rating: '',
+  description: '',
+  copies: '1',
+  imageUrl: ''
+});
 
   // Statistics
-  const totalStudents = students.length;
-  const totalBooks = books.length;
-  const availableBooks = books.filter(book => book.status === 'Available').length;
-  const activeStudents = students.filter(student => student.status === 'Active').length;
+const totalStudents = students.length;
+const totalBooks = books.length;
+const availableBooks = books.filter(book => book.status === 'available').length; // Changed from 'Available'
+const activeStudents = students.length;
 
   // Show notification
   const showNotification = (message, type = 'info') => {
@@ -72,73 +91,193 @@ const AdminDashboard = () => {
   };
 
   // Submit student form
-  const handleStudentSubmit = (e) => {
+  const handleStudentSubmit = async (e) => {
     e.preventDefault();
     
-    const { name, course, status } = studentForm;
+    const { name, email, password, studentId, department, yearLevel } = studentForm;
     
-    if (!name || !course) {
-      showNotification("Please fill out both name and course fields.", 'danger');
-      return;
-    }
-
     if (editingStudent) {
-      // Update existing student
-      const updatedStudents = students.map(student => 
-        student.id === editingStudent.id ? { ...student, ...studentForm } : student
-      );
-      setStudents(updatedStudents);
-      showNotification(`${name}'s information has been updated.`, 'success');
+      // For editing, don't require password (only update if provided)
+      if (!name || !email || !studentId || !department || !yearLevel) {
+        showNotification("Please fill out all fields except password (optional for updates).", 'danger');
+        return;
+      }
     } else {
-      // Add new student
-      const newStudent = {
-        id: students.length > 0 ? Math.max(...students.map(s => s.id)) + 1 : 1,
-        ...studentForm
-      };
-      setStudents([newStudent, ...students]);
-      showNotification(`${name} has been added to the directory.`, 'success');
+      // For new student, require all fields including password
+      if (!name || !email || !password || !studentId || !department || !yearLevel) {
+        showNotification("Please fill out all fields including password.", 'danger');
+        return;
+      }
     }
 
-    resetStudentForm();
+    try {
+      if (editingStudent) {
+        // Update existing student via API
+        // Only include password if it was changed
+        const updateData = { name, email, studentId, department, yearLevel };
+        if (password) {
+          updateData.password = password;
+        }
+
+        const response = await fetch(`http://localhost:5000/api/students/${editingStudent._id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(updateData),
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          // Update local state with the updated student
+          const updatedStudents = students.map(student => 
+            student._id === editingStudent._id ? result.data : student
+          );
+          setStudents(updatedStudents);
+          showNotification(`${name}'s information has been updated.`, 'success');
+        } else {
+          showNotification(result.message || 'Failed to update student.', 'danger');
+        }
+      } else {
+        // Add new student via API
+        const response = await fetch('http://localhost:5000/api/students', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name,
+            email,
+            password,
+            studentId,
+            department,
+            yearLevel,
+            role: 'student'
+          }),
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          setStudents([result.data, ...students]);
+          showNotification(`${name} has been added to the directory.`, 'success');
+        } else {
+          showNotification(result.message || 'Failed to add student.', 'danger');
+        }
+      }
+
+      resetStudentForm();
+    } catch (error) {
+      console.error('Error submitting student:', error);
+      showNotification('An error occurred. Please try again.', 'danger');
+    }
   };
 
-  // Submit book form
-  const handleBookSubmit = (e) => {
-    e.preventDefault();
-    
-    const { isbn, title, author, status } = bookForm;
-    
-    if (!isbn || !title || !author) {
-      showNotification("Please fill out all fields: ISBN, title, and author.", 'danger');
-      return;
-    }
+// Submit book form
+const handleBookSubmit = async (e) => {
+  e.preventDefault();
+  
+  const { isbn, title, author, status, category, genre, rating, description, copies, imageUrl } = bookForm;
+  
+  if (!title || !author) {
+    showNotification("Please fill out title and author fields.", 'danger');
+    return;
+  }
 
-    if (editingBook) {
-      // Update existing book
-      const updatedBooks = books.map(book => 
-        book.id === editingBook.id ? { ...book, ...bookForm } : book
-      );
-      setBooks(updatedBooks);
-      showNotification(`"${title}" has been updated.`, 'success');
+  try {
+if (editingBook) {
+      // Update existing book via API
+      // Calculate availableCopies based on the difference
+      const oldCopies = editingBook.copies || 1;
+      const oldAvailable = editingBook.availableCopies !== undefined ? editingBook.availableCopies : oldCopies;
+      const newCopies = parseInt(copies) || 1;
+      
+      // Calculate how many are currently borrowed
+      const borrowed = oldCopies - oldAvailable;
+      
+      // New available copies = new total copies - borrowed copies
+      const newAvailableCopies = Math.max(0, newCopies - borrowed);
+      
+      const response = await fetch(`http://localhost:5000/api/books/${editingBook._id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          isbn,
+          title,
+          author,
+          status,
+          category,
+          genre,
+          rating: parseFloat(rating) || 0,
+          description,
+          copies: newCopies,
+          availableCopies: newAvailableCopies,
+          imageUrl
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        const updatedBooks = books.map(book => 
+          book._id === editingBook._id ? result.data : book
+        );
+        setBooks(updatedBooks);
+        showNotification(`"${title}" has been updated.`, 'success');
+        resetBookForm();
+      } else {
+        showNotification(result.message || 'Failed to update book.', 'danger');
+      }
     } else {
-      // Add new book
-      const newBook = {
-        id: books.length > 0 ? Math.max(...books.map(b => b.id)) + 1 : 1,
-        ...bookForm
-      };
-      setBooks([newBook, ...books]);
-      showNotification(`"${title}" has been added to the library.`, 'success');
+      // Add new book via API
+      const response = await fetch('http://localhost:5000/api/books', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          isbn,
+          title,
+          author,
+          status,
+          category,
+          genre,
+          rating: parseFloat(rating) || 0,
+          description,
+          copies: parseInt(copies) || 1,
+          availableCopies: parseInt(copies) || 1,
+          imageUrl
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setBooks([result.data, ...books]);
+        showNotification(`"${title}" has been added to the library.`, 'success');
+        resetBookForm();
+      } else {
+        showNotification(result.message || 'Failed to add book.', 'danger');
+      }
     }
 
-    resetBookForm();
-  };
-
+  } catch (error) {
+    console.error('Error submitting book:', error);
+    showNotification('An error occurred. Please try again.', 'danger');
+  }
+};
   // Start editing a student
   const startStudentEdit = (student) => {
     setStudentForm({
       name: student.name,
-      course: student.course,
-      status: student.status
+      email: student.email,
+      password: '', // Leave password empty for editing
+      studentId: student.studentId,
+      department: student.department,
+      yearLevel: student.yearLevel
     });
     setEditingStudent(student);
     
@@ -147,99 +286,148 @@ const AdminDashboard = () => {
   };
 
   // Start editing a book
-  const startBookEdit = (book) => {
-    setBookForm({
-      isbn: book.isbn,
-      title: book.title,
-      author: book.author,
-      status: book.status
-    });
-    setEditingBook(book);
-    
-    // Scroll to book form
-    document.querySelector('.book-section').scrollIntoView({ behavior: 'smooth' });
-  };
+const startBookEdit = (book) => {
+  setBookForm({
+    isbn: book.isbn || '',
+    title: book.title || '',
+    author: book.author || '',
+    status: book.status || 'available',
+    category: book.category || 'all',
+    genre: book.genre || '',
+    rating: book.rating || '',
+    description: book.description || '',
+    copies: book.copies || '1',
+    imageUrl: book.imageUrl || ''
+  });
+  setEditingBook(book);
+  
+  // Scroll to book form
+  document.querySelector('.book-section').scrollIntoView({ behavior: 'smooth' });
+};
 
   // Delete a student
-  const deleteStudent = (studentId) => {
-    const student = students.find(s => s.id === studentId);
+  const deleteStudent = async (studentId) => {
+    const student = students.find(s => s._id === studentId);
     if (!student) return;
     
     if (!window.confirm(`Are you sure you want to delete "${student.name}" from the directory?`)) return;
     
-    const updatedStudents = students.filter(s => s.id !== studentId);
-    setStudents(updatedStudents);
-    resetStudentForm();
-    showNotification(`${student.name} has been removed from the directory.`, 'info');
+    try {
+      const response = await fetch(`http://localhost:5000/api/students/${studentId}`, {
+        method: 'DELETE',
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        const updatedStudents = students.filter(s => s._id !== studentId);
+        setStudents(updatedStudents);
+        resetStudentForm();
+        showNotification(`${student.name} has been removed from the directory.`, 'info');
+      } else {
+        showNotification(result.message || 'Failed to delete student.', 'danger');
+      }
+    } catch (error) {
+      console.error('Error deleting student:', error);
+      showNotification('An error occurred while deleting the student.', 'danger');
+    }
   };
 
-  // Delete a book
-  const deleteBook = (bookId) => {
-    const book = books.find(b => b.id === bookId);
-    if (!book) return;
-    
-    if (!window.confirm(`Are you sure you want to delete "${book.title}" from the library?`)) return;
-    
-    const updatedBooks = books.filter(b => b.id !== bookId);
-    setBooks(updatedBooks);
-    resetBookForm();
-    showNotification(`"${book.title}" has been removed from the library.`, 'info');
-  };
+// Delete a book
+const deleteBook = async (bookId) => {
+  const book = books.find(b => b._id === bookId);
+  if (!book) return;
+  
+  if (!window.confirm(`Are you sure you want to delete "${book.title}" from the library?`)) return;
+  
+  try {
+    const response = await fetch(`http://localhost:5000/api/books/${bookId}`, {
+      method: 'DELETE',
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      const updatedBooks = books.filter(b => b._id !== bookId);
+      setBooks(updatedBooks);
+      resetBookForm();
+      showNotification(`"${book.title}" has been removed from the library.`, 'info');
+    } else {
+      showNotification(result.message || 'Failed to delete book.', 'danger');
+    }
+  } catch (error) {
+    console.error('Error deleting book:', error);
+    showNotification('An error occurred while deleting the book.', 'danger');
+  }
+};
 
   // Reset student form
   const resetStudentForm = () => {
     setStudentForm({
       name: '',
-      course: '',
-      status: 'Active'
+      email: '',
+      password: '',
+      studentId: '',
+      department: '',
+      yearLevel: ''
     });
     setEditingStudent(null);
   };
 
-  // Reset book form
-  const resetBookForm = () => {
-    setBookForm({
-      isbn: '',
-      title: '',
-      author: '',
-      status: 'Available'
-    });
-    setEditingBook(null);
-  };
+// Reset book form
+const resetBookForm = () => {
+  setBookForm({
+    isbn: '',
+    title: '',
+    author: '',
+    status: 'available',
+    category: 'all',
+    genre: '',
+    rating: '',
+    description: '',
+    copies: '1',
+    imageUrl: ''
+  });
+  setEditingBook(null);
+};
 
   // Get status badge class
-  const getStatusBadgeClass = (status) => {
-    switch(status) {
-      case 'Active':
-      case 'Available':
-        return 'status-active';
-      case 'On Leave':
-        return 'status-leave';
-      case 'Inactive':
-        return 'status-inactive';
-      case 'Borrowed':
-        return 'status-borrowed';
-      default:
-        return '';
-    }
-  };
+const getStatusBadgeClass = (status) => {
+  // Convert to lowercase for comparison
+  const statusLower = status?.toLowerCase();
+  switch(statusLower) {
+    case 'active':
+    case 'available':
+      return 'status-active';
+    case 'on leave':
+      return 'status-leave';
+    case 'inactive':
+      return 'status-inactive';
+    case 'borrowed':
+      return 'status-borrowed';
+    default:
+      return '';
+  }
+};
 
   // Get status icon
-  const getStatusIcon = (status) => {
-    switch(status) {
-      case 'Active':
-      case 'Available':
-        return 'fas fa-check-circle';
-      case 'On Leave':
-        return 'fas fa-clock';
-      case 'Inactive':
-        return 'fas fa-times-circle';
-      case 'Borrowed':
-        return 'fas fa-book-reader';
-      default:
-        return 'fas fa-circle';
-    }
-  };
+const getStatusIcon = (status) => {
+  // Convert to lowercase for comparison
+  const statusLower = status?.toLowerCase();
+  switch(statusLower) {
+    case 'active':
+    case 'available':
+      return 'fas fa-check-circle';
+    case 'on leave':
+      return 'fas fa-clock';
+    case 'inactive':
+      return 'fas fa-times-circle';
+    case 'borrowed':
+      return 'fas fa-book-reader';
+    default:
+      return 'fas fa-circle';
+  }
+};
 
   return (
     <div className="admin-dashboard">
@@ -322,38 +510,81 @@ const AdminDashboard = () => {
                   placeholder="Student name"
                   value={studentForm.name}
                   onChange={handleStudentFormChange}
-                  onKeyPress={(e) => e.key === 'Enter' && handleStudentSubmit(e)}
                 />
               </div>
               <div className="form-group">
-                <label htmlFor="studentCourse">
-                  <i className="fas fa-graduation-cap"></i> Course
+                <label htmlFor="studentEmail">
+                  <i className="fas fa-envelope"></i> Email
+                </label>
+                <input
+                  type="email"
+                  id="studentEmail"
+                  name="email"
+                  className="form-control"
+                  placeholder="student@example.com"
+                  value={studentForm.email}
+                  onChange={handleStudentFormChange}
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="studentPassword">
+                  <i className="fas fa-lock"></i> Password {editingStudent && <span style={{fontSize: '0.85em', color: '#666'}}>(leave blank to keep current)</span>}
+                </label>
+                <input
+                  type="password"
+                  id="studentPassword"
+                  name="password"
+                  className="form-control"
+                  placeholder={editingStudent ? "Enter new password (optional)" : "Password"}
+                  value={studentForm.password}
+                  onChange={handleStudentFormChange}
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="studentId">
+                  <i className="fas fa-id-card"></i> Student ID
                 </label>
                 <input
                   type="text"
-                  id="studentCourse"
-                  name="course"
+                  id="studentId"
+                  name="studentId"
                   className="form-control"
-                  placeholder="Course"
-                  value={studentForm.course}
+                  placeholder="e.g. 2024-001"
+                  value={studentForm.studentId}
                   onChange={handleStudentFormChange}
-                  onKeyPress={(e) => e.key === 'Enter' && handleStudentSubmit(e)}
                 />
               </div>
               <div className="form-group">
-                <label htmlFor="studentStatus">
-                  <i className="fas fa-circle"></i> Status
+                <label htmlFor="studentDepartment">
+                  <i className="fas fa-building"></i> Department
+                </label>
+                <input
+                  type="text"
+                  id="studentDepartment"
+                  name="department"
+                  className="form-control"
+                  placeholder="Department"
+                  value={studentForm.department}
+                  onChange={handleStudentFormChange}
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="studentYearLevel">
+                  <i className="fas fa-graduation-cap"></i> Year Level
                 </label>
                 <select
-                  id="studentStatus"
-                  name="status"
+                  id="studentYearLevel"
+                  name="yearLevel"
                   className="form-control"
-                  value={studentForm.status}
+                  value={studentForm.yearLevel}
                   onChange={handleStudentFormChange}
                 >
-                  <option value="Active">Active</option>
-                  <option value="On Leave">On Leave</option>
-                  <option value="Inactive">Inactive</option>
+                  <option value="">Select Year Level</option>
+                  <option value="1">1st Year</option>
+                  <option value="2">2nd Year</option>
+                  <option value="3">3rd Year</option>
+                  <option value="4">4th Year</option>
+                  <option value="5">5th Year</option>
                 </select>
               </div>
             </div>
@@ -380,14 +611,20 @@ const AdminDashboard = () => {
             <table className="table">
               <thead>
                 <tr>
-                  <th style={{ width: '35%' }}>
+                  <th style={{ width: '20%' }}>
                     <i className="fas fa-user"></i> Name
                   </th>
-                  <th style={{ width: '30%' }}>
-                    <i className="fas fa-graduation-cap"></i> Course
+                  <th style={{ width: '20%' }}>
+                    <i className="fas fa-envelope"></i> Email
                   </th>
                   <th style={{ width: '15%' }}>
-                    <i className="fas fa-circle"></i> Status
+                    <i className="fas fa-id-card"></i> Student ID
+                  </th>
+                  <th style={{ width: '15%' }}>
+                    <i className="fas fa-building"></i> Department
+                  </th>
+                  <th style={{ width: '10%' }}>
+                    <i className="fas fa-graduation-cap"></i> Year
                   </th>
                   <th style={{ width: '20%' }}>
                     <i className="fas fa-cog"></i> Actions
@@ -397,7 +634,7 @@ const AdminDashboard = () => {
               <tbody>
                 {students.length === 0 ? (
                   <tr>
-                    <td colSpan="4" className="empty-state">
+                    <td colSpan="6" className="empty-state">
                       <i className="fas fa-users"></i>
                       <h3>No Students Found</h3>
                       <p>Add your first student above.</p>
@@ -405,7 +642,7 @@ const AdminDashboard = () => {
                   </tr>
                 ) : (
                   students.map(student => (
-                    <tr key={student.id}>
+                    <tr key={student._id}>
                       <td>
                         <div className="user-info">
                           <div className="user-avatar">
@@ -418,15 +655,27 @@ const AdminDashboard = () => {
                       </td>
                       <td>
                         <div className="course-info">
-                          <i className="fas fa-graduation-cap"></i>
-                          {student.course}
+                          <i className="fas fa-envelope"></i>
+                          {student.email}
                         </div>
                       </td>
                       <td>
-                        <span className={`status-badge ${getStatusBadgeClass(student.status)}`}>
-                          <i className={getStatusIcon(student.status)}></i>
-                          {student.status}
-                        </span>
+                        <div className="isbn-info">
+                          <i className="fas fa-id-card"></i>
+                          {student.studentId}
+                        </div>
+                      </td>
+                      <td>
+                        <div className="course-info">
+                          <i className="fas fa-building"></i>
+                          {student.department}
+                        </div>
+                      </td>
+                      <td>
+                        <div className="isbn-info">
+                          <i className="fas fa-graduation-cap"></i>
+                          Year {student.yearLevel}
+                        </div>
                       </td>
                       <td>
                         <div className="actions">
@@ -439,7 +688,7 @@ const AdminDashboard = () => {
                           </button>
                           <button
                             className="btn btn-danger"
-                            onClick={() => deleteStudent(student.id)}
+                            onClick={() => deleteStudent(student._id)}
                           >
                             <i className="fas fa-trash"></i>
                             Delete
@@ -464,87 +713,174 @@ const AdminDashboard = () => {
             Add new titles to the collection, update availability, or remove outdated items.
           </p>
 
-          <form onSubmit={handleBookSubmit}>
-            <div className="form-grid">
-              <div className="form-group">
-                <label htmlFor="bookIsbn">
-                  <i className="fas fa-barcode"></i> ISBN
-                </label>
-                <input
-                  type="text"
-                  id="bookIsbn"
-                  name="isbn"
-                  className="form-control"
-                  placeholder="e.g. 978-0-00-000000-0"
-                  value={bookForm.isbn}
-                  onChange={handleBookFormChange}
-                  onKeyPress={(e) => e.key === 'Enter' && handleBookSubmit(e)}
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="bookTitle">
-                  <i className="fas fa-book"></i> Title
-                </label>
-                <input
-                  type="text"
-                  id="bookTitle"
-                  name="title"
-                  className="form-control"
-                  placeholder="Book title"
-                  value={bookForm.title}
-                  onChange={handleBookFormChange}
-                  onKeyPress={(e) => e.key === 'Enter' && handleBookSubmit(e)}
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="bookAuthor">
-                  <i className="fas fa-user-pen"></i> Author
-                </label>
-                <input
-                  type="text"
-                  id="bookAuthor"
-                  name="author"
-                  className="form-control"
-                  placeholder="Author name"
-                  value={bookForm.author}
-                  onChange={handleBookFormChange}
-                  onKeyPress={(e) => e.key === 'Enter' && handleBookSubmit(e)}
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="bookStatus">
-                  <i className="fas fa-circle"></i> Status
-                </label>
-                <select
-                  id="bookStatus"
-                  name="status"
-                  className="form-control"
-                  value={bookForm.status}
-                  onChange={handleBookFormChange}
-                >
-                  <option value="Available">Available</option>
-                  <option value="Borrowed">Borrowed</option>
-                </select>
-              </div>
-            </div>
+<form onSubmit={handleBookSubmit}>
+  <div className="form-grid">
+    <div className="form-group">
+      <label htmlFor="bookIsbn">
+        <i className="fas fa-barcode"></i> ISBN
+      </label>
+      <input
+        type="text"
+        id="bookIsbn"
+        name="isbn"
+        className="form-control"
+        placeholder="e.g. 978-0-00-000000-0"
+        value={bookForm.isbn}
+        onChange={handleBookFormChange}
+      />
+    </div>
+    <div className="form-group">
+      <label htmlFor="bookTitle">
+        <i className="fas fa-book"></i> Title
+      </label>
+      <input
+        type="text"
+        id="bookTitle"
+        name="title"
+        className="form-control"
+        placeholder="Book title"
+        value={bookForm.title}
+        onChange={handleBookFormChange}
+      />
+    </div>
+    <div className="form-group">
+      <label htmlFor="bookAuthor">
+        <i className="fas fa-user-pen"></i> Author
+      </label>
+      <input
+        type="text"
+        id="bookAuthor"
+        name="author"
+        className="form-control"
+        placeholder="Author name"
+        value={bookForm.author}
+        onChange={handleBookFormChange}
+      />
+    </div>
+    <div className="form-group">
+      <label htmlFor="bookCategory">
+        <i className="fas fa-tag"></i> Category
+      </label>
+      <select
+        id="bookCategory"
+        name="category"
+        className="form-control"
+        value={bookForm.category}
+        onChange={handleBookFormChange}
+      >
+        <option value="all">All</option>
+        <option value="featured">Featured</option>
+        <option value="popular">Popular</option>
+      </select>
+    </div>
+    <div className="form-group">
+      <label htmlFor="bookGenre">
+        <i className="fas fa-layer-group"></i> Genre
+      </label>
+      <input
+        type="text"
+        id="bookGenre"
+        name="genre"
+        className="form-control"
+        placeholder="e.g. Fantasy, Romance, Mystery"
+        value={bookForm.genre}
+        onChange={handleBookFormChange}
+      />
+    </div>
+    <div className="form-group">
+      <label htmlFor="bookRating">
+        <i className="fas fa-star"></i> Rating
+      </label>
+      <input
+        type="number"
+        id="bookRating"
+        name="rating"
+        className="form-control"
+        placeholder="0.0 - 5.0"
+        min="0"
+        max="5"
+        step="0.1"
+        value={bookForm.rating}
+        onChange={handleBookFormChange}
+      />
+    </div>
+    <div className="form-group">
+      <label htmlFor="bookCopies">
+        <i className="fas fa-copy"></i> Number of Copies
+      </label>
+      <input
+        type="number"
+        id="bookCopies"
+        name="copies"
+        className="form-control"
+        placeholder="1"
+        min="1"
+        value={bookForm.copies}
+        onChange={handleBookFormChange}
+      />
+    </div>
+    <div className="form-group">
+      <label htmlFor="bookStatus">
+        <i className="fas fa-circle"></i> Status
+      </label>
+      <select
+        id="bookStatus"
+        name="status"
+        className="form-control"
+        value={bookForm.status}
+        onChange={handleBookFormChange}
+      >
+        <option value="available">Available</option>
+        <option value="borrowed">Borrowed</option>
+      </select>
+    </div>
+    <div className="form-group">
+      <label htmlFor="bookImageUrl">
+        <i className="fas fa-image"></i> Image URL
+      </label>
+      <input
+        type="text"
+        id="bookImageUrl"
+        name="imageUrl"
+        className="form-control"
+        placeholder="https://example.com/image.jpg"
+        value={bookForm.imageUrl}
+        onChange={handleBookFormChange}
+      />
+    </div>
+    <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+      <label htmlFor="bookDescription">
+        <i className="fas fa-align-left"></i> Description
+      </label>
+      <textarea
+        id="bookDescription"
+        name="description"
+        className="form-control"
+        placeholder="Book description"
+        rows="3"
+        value={bookForm.description}
+        onChange={handleBookFormChange}
+      />
+    </div>
+  </div>
 
-            <div className="form-actions">
-              <button type="submit" className="btn btn-primary">
-                <i className={editingBook ? "fas fa-save" : "fas fa-plus"}></i>
-                <span>{editingBook ? 'Save Changes' : 'Add Book'}</span>
-              </button>
-              {editingBook && (
-                <button
-                  type="button"
-                  className="btn btn-outline"
-                  onClick={resetBookForm}
-                >
-                  <i className="fas fa-times"></i>
-                  Cancel
-                </button>
-              )}
-            </div>
-          </form>
+  <div className="form-actions">
+    <button type="submit" className="btn btn-primary">
+      <i className={editingBook ? "fas fa-save" : "fas fa-plus"}></i>
+      <span>{editingBook ? 'Save Changes' : 'Add Book'}</span>
+    </button>
+    {editingBook && (
+      <button
+        type="button"
+        className="btn btn-outline"
+        onClick={resetBookForm}
+      >
+        <i className="fas fa-times"></i>
+        Cancel
+      </button>
+    )}
+  </div>
+</form>
 
           <div className="table-container">
             <table className="table">
@@ -578,7 +914,7 @@ const AdminDashboard = () => {
                   </tr>
                 ) : (
                   books.map(book => (
-                    <tr key={book.id}>
+                    <tr key={book._id}>
                       <td>
                         <div className="isbn-info">
                           <i className="fas fa-barcode"></i>
@@ -614,7 +950,7 @@ const AdminDashboard = () => {
                           </button>
                           <button
                             className="btn btn-danger"
-                            onClick={() => deleteBook(book.id)}
+                            onClick={() => deleteBook(book._id)}
                           >
                             <i className="fas fa-trash"></i>
                             Delete

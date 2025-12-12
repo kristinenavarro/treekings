@@ -4,7 +4,7 @@
   --surface: #FFFFFF;       /* card surface */
   --nav: #12355B;           /* deep navy - primary color */
   --accent: #8B5E3C;        /* oak brown - accent color */
-  --muted: #6B6B6B;         /* muted text */
+  --muted: #650000;         /* muted text */
   --text: #222222;          /* main text */
   --danger: #C0392B;        /* red */
   --success: #2E7D32;       /* green */
@@ -228,31 +228,50 @@ main {
 
 .form-control {
   padding: 0.75rem 1rem;
-  border: 1px solid rgba(18, 53, 91, 0.2);
+  border: 1px solid rgba(18, 53, 91, 0.3); /* Darker border */
   border-radius: 8px;
   font-size: 0.95rem;
   transition: all 0.3s ease;
-  background: #FAFBFA;
+  background: white; /* Use white background */
+  color: var(--text); /* Ensure text color */
   font-family: 'Source Sans 3', sans-serif;
   outline: none;
-  box-shadow: var(--shadow);
+  font-weight: 500; /* Medium weight for better visibility */
+  /* Lighter shadow that doesn't obscure text */
+  box-shadow: 0 2px 6px rgba(18, 53, 91, 0.08);
 }
 
 .form-control:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 2px rgba(139, 94, 60, 0.1);
+  box-shadow: 0 0 0 3px rgba(139, 94, 60, 0.15);
   background: white;
+  color: var(--text);
 }
 
-.form-actions {
-  display: flex;
-  gap: 0.75rem;
-  align-items: center;
-  justify-content: flex-end;
-  padding-top: 1.25rem;
-  border-top: 1px solid rgba(18, 53, 91, 0.08);
+/* Make placeholder clearly visible */
+.form-control::placeholder {
+  color: rgba(101, 0, 0, 0.5); /* Using your muted color at 50% opacity */
+  font-weight: 400;
 }
 
+/* If using input types like number, date, etc. */
+.form-control[type="number"],
+.form-control[type="date"],
+.form-control[type="email"],
+.form-control[type="password"] {
+  color: var(--text);
+}
+
+/* If the issue persists in specific browsers */
+.form-control::-webkit-input-placeholder {
+  color: rgba(101, 0, 0, 0.5);
+}
+.form-control::-moz-placeholder {
+  color: rgba(101, 0, 0, 0.5);
+}
+.form-control:-ms-input-placeholder {
+  color: rgba(101, 0, 0, 0.5);
+}
 /* Buttons */
 .btn {
   padding: 0.75rem 1.5rem;

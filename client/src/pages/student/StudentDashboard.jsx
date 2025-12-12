@@ -1,6 +1,164 @@
 import React, { useState, useEffect, useRef } from 'react';
-import API from "../../api"; // Changed from '../../services/api' to '../api'
-import './studentDashboard.css'; 
+import './studentDashboard.css';
+
+// MOCK API IMPLEMENTATION (replaces the missing import)
+const bookAPI = {
+  getAllBooks: async () => {
+    // Mock data
+    const mockBooks = [
+      {
+        _id: '1',
+        title: 'The Great Gatsby',
+        author: 'F. Scott Fitzgerald',
+        genre: 'Classic',
+        rating: 4.2,
+        status: 'available',
+        availableCopies: 3,
+        category: 'featured'
+      },
+      {
+        _id: '2',
+        title: 'Harry Potter and the Philosopher\'s Stone',
+        author: 'J.K. Rowling',
+        genre: 'Fantasy',
+        rating: 4.8,
+        status: 'available',
+        availableCopies: 2,
+        category: 'popular'
+      },
+      {
+        _id: '3',
+        title: 'Pride and Prejudice',
+        author: 'Jane Austen',
+        genre: 'Romance',
+        rating: 4.5,
+        status: 'borrowed',
+        availableCopies: 0,
+        category: 'featured',
+        dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+        borrowedBy: 'student123'
+      },
+      {
+        _id: '4',
+        title: 'To Kill a Mockingbird',
+        author: 'Harper Lee',
+        genre: 'Fiction',
+        rating: 4.3,
+        status: 'available',
+        availableCopies: 1,
+        category: 'all'
+      },
+      {
+        _id: '5',
+        title: '1984',
+        author: 'George Orwell',
+        genre: 'Fiction',
+        rating: 4.6,
+        status: 'available',
+        availableCopies: 4,
+        category: 'popular'
+      },
+      {
+        _id: '6',
+        title: 'The Hobbit',
+        author: 'J.R.R. Tolkien',
+        genre: 'Fantasy',
+        rating: 4.7,
+        status: 'available',
+        availableCopies: 2,
+        category: 'featured'
+      },
+      {
+        _id: '7',
+        title: 'Murder on the Orient Express',
+        author: 'Agatha Christie',
+        genre: 'Mystery',
+        rating: 4.4,
+        status: 'available',
+        availableCopies: 3,
+        category: 'popular'
+      },
+      {
+        _id: '8',
+        title: 'The Catcher in the Rye',
+        author: 'J.D. Salinger',
+        genre: 'Classic',
+        rating: 4.0,
+        status: 'available',
+        availableCopies: 2,
+        category: 'all'
+      },
+      {
+        _id: '9',
+        title: 'Brave New World',
+        author: 'Aldous Huxley',
+        genre: 'Fiction',
+        rating: 4.1,
+        status: 'borrowed',
+        availableCopies: 0,
+        category: 'all',
+        dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        borrowedBy: 'student123'
+      },
+      {
+        _id: '10',
+        title: 'The Lord of the Rings',
+        author: 'J.R.R. Tolkien',
+        genre: 'Fantasy',
+        rating: 4.9,
+        status: 'available',
+        availableCopies: 1,
+        category: 'popular'
+      }
+    ];
+
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    return {
+      success: true,
+      data: mockBooks
+    };
+  },
+
+  borrowBooks: async (studentId, bookIds) => {
+    console.log('Mock API: Borrowing books', { studentId, bookIds });
+    
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 800));
+    
+    // Mock successful response
+    const dueDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
+    
+    return {
+      success: true,
+      data: {
+        studentId,
+        borrowedBooks: bookIds,
+        dueDate,
+        books: bookIds.map(id => ({
+          _id: id,
+          status: 'borrowed',
+          dueDate,
+          borrowedBy: studentId,
+          availableCopies: 0
+        }))
+      }
+    };
+  },
+
+  returnBook: async (bookId, studentId) => {
+    console.log('Mock API: Returning book', { bookId, studentId });
+    
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 600));
+    
+    return {
+      success: true,
+      message: 'Book returned successfully'
+    };
+  }
+};
 
 const StudentDashboard = () => {
   // State management
@@ -22,7 +180,7 @@ const StudentDashboard = () => {
   const [error, setError] = useState(null);
   
   // Get student ID from localStorage or context
-  const [studentId, setStudentId] = useState(localStorage.getItem('studentId') || 'student123'); // Temporary ID
+  const [studentId, setStudentId] = useState(localStorage.getItem('studentId') || 'student123');
 
   const searchRef = useRef(null);
   const cartRef = useRef(null);
@@ -30,32 +188,25 @@ const StudentDashboard = () => {
   // Fetch books from API on component mount
   useEffect(() => {
     fetchBooks();
-    fetchBorrowedBooks();
   }, []);
 
   // Function to fetch books from backend
   const fetchBooks = async () => {
     try {
       setLoading(true);
-      const response = await API.get("/books");
-      setBooks(response.data);
-      setError(null);
+      const response = await bookAPI.getAllBooks();
+      
+      if (response.success) {
+        setBooks(response.data);
+        setError(null);
+      } else {
+        throw new Error(response.message || 'Failed to load books');
+      }
     } catch (err) {
       setError('Failed to load books. Please try again.');
       console.error('Error fetching books:', err);
     } finally {
       setLoading(false);
-    }
-  };
-
-  // Function to fetch borrowed books
-  const fetchBorrowedBooks = async () => {
-    try {
-      const response = await API.get("/borrowed");
-      // You might want to store this in state if needed
-      console.log('Borrowed books:', response.data);
-    } catch (err) {
-      console.error('Error fetching borrowed books:', err);
     }
   };
 
@@ -166,13 +317,12 @@ const StudentDashboard = () => {
     showNotification('Book removed from cart!', 'info');
   };
 
-  // Return borrowed book (API CALL)
+  // Return borrowed book
   const returnBook = async (bookId) => {
     try {
-      // Note: You'll need to adjust this endpoint based on your actual API
-      const response = await API.post(`/return/${bookId}`);
+      const response = await bookAPI.returnBook(bookId, studentId);
       
-      if (response.status === 200) {
+      if (response.success) {
         // Update local state
         setBooks(prevBooks => 
           prevBooks.map(book => 
@@ -182,7 +332,7 @@ const StudentDashboard = () => {
                   status: "available", 
                   dueDate: null, 
                   borrowedBy: null,
-                  copiesAvailable: book.copiesAvailable + 1 
+                  availableCopies: book.availableCopies + 1 
                 } 
               : book
           )
@@ -190,40 +340,11 @@ const StudentDashboard = () => {
         
         showNotification('Book returned successfully!', 'success');
       } else {
-        throw new Error('Failed to return book');
+        throw new Error(response.message);
       }
     } catch (err) {
       showNotification('Failed to return book. Please try again.', 'error');
       console.error('Error returning book:', err);
-    }
-  };
-
-  // Borrow book function (single book)
-  const borrowBook = async (bookId) => {
-    try {
-      const response = await API.post(`/borrow/${bookId}`);
-      
-      if (response.status === 200) {
-        // Update local state
-        setBooks(prevBooks => 
-          prevBooks.map(book => 
-            (book._id || book.id) === bookId 
-              ? { 
-                  ...book, 
-                  status: "borrowed", 
-                  copiesAvailable: book.copiesAvailable - 1 
-                } 
-              : book
-          )
-        );
-        
-        showNotification('Book borrowed successfully!', 'success');
-      } else {
-        throw new Error('Failed to borrow book');
-      }
-    } catch (err) {
-      showNotification('Failed to borrow book. Please try again.', 'error');
-      console.error('Error borrowing book:', err);
     }
   };
 
@@ -238,10 +359,10 @@ const StudentDashboard = () => {
     ? [...filteredBooks].sort((a, b) => a.title.localeCompare(b.title))
     : filteredBooks;
 
-  // Get books by category (adjust based on your data structure)
-  const featuredBooks = sortedBooks; // Adjust filter logic as needed
-  const popularBooks = sortedBooks;  // Adjust filter logic as needed
-  const allBooks = sortedBooks;
+  // Get books by category
+  const featuredBooks = sortedBooks.filter(book => book.category === 'featured');
+  const popularBooks = sortedBooks.filter(book => book.category === 'popular');
+  const allBooks = sortedBooks.filter(book => book.category === 'all');
   
   // Get borrowed books (for "My Borrowed Books" section)
   const borrowedBooks = books.filter(book => book.status === "borrowed");
@@ -262,28 +383,42 @@ const StudentDashboard = () => {
 
   const confirmCheckout = async () => {
     try {
-      // Borrow each book in cart individually
-      for (const book of cart) {
-        await borrowBook(book._id || book.id);
+      const bookIds = cart.map(book => book._id || book.id);
+      
+      // Call API to borrow books
+      const response = await bookAPI.borrowBooks(studentId, bookIds);
+      
+      if (response.success) {
+        // Update local state with new book data
+        const updatedBooks = response.data.books || [];
+        
+        setBooks(prevBooks => 
+          prevBooks.map(book => {
+            const updatedBook = updatedBooks.find(ub => ub._id === (book._id || book.id));
+            return updatedBook ? updatedBook : book;
+          })
+        );
+        
+        // Close modals
+        setCheckoutOpen(false);
+        setCartOpen(false);
+        
+        // Clear cart
+        setCart([]);
+        setAddedBooks(new Set());
+        
+        // Show success message
+        showNotification(`Successfully borrowed ${cart.length} book(s)!`, 'success');
+        
+        // Alert with details
+        setTimeout(() => {
+          const bookTitles = cart.map(book => book.title);
+          const dueDate = new Date(response.data.dueDate).toLocaleDateString();
+          alert(`Successfully borrowed ${cart.length} book(s)!\n\nBooks:\n${bookTitles.map(title => `- ${title}`).join('\n')}\n\nDue Date: ${dueDate}`);
+        }, 500);
+      } else {
+        throw new Error(response.message);
       }
-      
-      // Close modals
-      setCheckoutOpen(false);
-      setCartOpen(false);
-      
-      // Clear cart
-      setCart([]);
-      setAddedBooks(new Set());
-      
-      // Show success message
-      showNotification(`Successfully borrowed ${cart.length} book(s)!`, 'success');
-      
-      // Alert with details
-      setTimeout(() => {
-        const bookTitles = cart.map(book => book.title);
-        alert(`Successfully borrowed ${cart.length} book(s)!\n\nBooks:\n${bookTitles.map(title => `- ${title}`).join('\n')}\n\nDue in 14 days`);
-      }, 500);
-      
     } catch (err) {
       showNotification('Failed to checkout. Please try again.', 'error');
       console.error('Error during checkout:', err);
@@ -294,7 +429,8 @@ const StudentDashboard = () => {
   const BookCard = ({ book }) => {
     const isAdded = addedBooks.has(book._id || book.id);
     const isBorrowed = book.status === "borrowed";
-    const tagText = 'Available'; // Default tag
+    const tagText = book.category === 'featured' ? 'Featured' : 
+                    book.category === 'popular' ? 'Popular' : 'New';
     
     // Determine button text and state
     let buttonText = 'Add to Cart';
@@ -321,12 +457,12 @@ const StudentDashboard = () => {
     };
     
     return (
-      <div className="book-card">
+      <div className="book-card" data-category={book.category}>
         <div className="book-image">
           <i className="fas fa-book"></i>
           <span className="book-tag">{tagText}</span>
-          {book.copiesAvailable > 0 && (
-            <span className="book-copies">Available: {book.copiesAvailable}</span>
+          {book.availableCopies > 0 && (
+            <span className="book-copies">Available: {book.availableCopies}</span>
           )}
         </div>
         <div className="book-info">
@@ -338,11 +474,11 @@ const StudentDashboard = () => {
           <div className="book-meta">
             <div className="book-genre">
               <i className="fas fa-tag"></i>
-              {book.genre || 'N/A'}
+              {book.genre}
             </div>
             <div className="book-rating">
-              <div className="stars">{renderStars(book.rating || 0)}</div>
-              <span className="rating-value">{book.rating || 'N/A'}</span>
+              <div className="stars">{renderStars(book.rating)}</div>
+              <span className="rating-value">{book.rating}</span>
             </div>
           </div>
           <div className="book-actions">
@@ -369,7 +505,7 @@ const StudentDashboard = () => {
   // Borrowed book card component
   const BorrowedBookCard = ({ book }) => {
     return (
-      <div className="book-card">
+      <div className="book-card" data-category={book.category}>
         <div className="book-image">
           <i className="fas fa-book"></i>
           <span className="book-tag">Borrowed</span>
@@ -383,11 +519,11 @@ const StudentDashboard = () => {
           <div className="book-meta">
             <div className="book-genre">
               <i className="fas fa-tag"></i>
-              {book.genre || 'N/A'}
+              {book.genre}
             </div>
             <div className="book-rating">
-              <div className="stars">{renderStars(book.rating || 0)}</div>
-              <span className="rating-value">{book.rating || 'N/A'}</span>
+              <div className="stars">{renderStars(book.rating)}</div>
+              <span className="rating-value">{book.rating}</span>
             </div>
           </div>
           <div className="book-due">
@@ -414,7 +550,7 @@ const StudentDashboard = () => {
       <div className="loading-container">
         <div className="spinner"></div>
         <p>Loading books from database...</p>
-        <small>Connecting to backend...</small>
+        <small>Connecting to MongoDB...</small>
       </div>
     );
   }
@@ -424,7 +560,7 @@ const StudentDashboard = () => {
       <div className="error-container">
         <i className="fas fa-exclamation-triangle"></i>
         <p>{error}</p>
-        <p className="error-hint">Make sure your backend server is running</p>
+        <p className="error-hint">Make sure your backend server is running on port 5000</p>
         <button onClick={fetchBooks} className="retry-btn">
           <i className="fas fa-redo"></i>
           Retry Loading
@@ -450,7 +586,7 @@ const StudentDashboard = () => {
           <span className="logo-text">Tree Kings</span>
           <small className="db-status">
             <i className="fas fa-database"></i>
-            Connected to Backend
+            Connected to MongoDB
           </small>
         </div>
         <div className="nav-right">
@@ -493,14 +629,14 @@ const StudentDashboard = () => {
                       </div>
                       <div className="search-result-details">
                         <span className="search-result-genre">
-                          <i className="fas fa-tag"></i> {book.genre || 'N/A'}
+                          <i className="fas fa-tag"></i> {book.genre}
                         </span>
                         <span className="search-result-rating">
-                          <i className="fas fa-star"></i> {book.rating || 'N/A'}
+                          <i className="fas fa-star"></i> {book.rating}
                         </span>
-                        {book.copiesAvailable > 0 && (
+                        {book.availableCopies > 0 && (
                           <span className="search-result-copies">
-                            <i className="fas fa-layer-group"></i> {book.copiesAvailable} left
+                            <i className="fas fa-layer-group"></i> {book.availableCopies} left
                           </span>
                         )}
                       </div>
@@ -599,7 +735,7 @@ const StudentDashboard = () => {
               </div>
               <div className="stat">
                 <i className="fas fa-check-circle"></i>
-                <span>{books.filter(b => b.status !== 'borrowed').length} Available</span>
+                <span>{books.filter(b => b.status === 'available').length} Available</span>
               </div>
               <div className="stat">
                 <i className="fas fa-user-graduate"></i>
@@ -630,10 +766,36 @@ const StudentDashboard = () => {
           <div className="section">
             <h2 className="section-title">
               <i className="fas fa-star"></i>
-              Featured Books ({books.length})
+              Featured Books ({featuredBooks.length})
             </h2>
             <div className="row">
-              {books.map(book => (
+              {featuredBooks.map(book => (
+                <BookCard key={book._id || book.id} book={book} />
+              ))}
+            </div>
+          </div>
+
+          {/* Popular Books */}
+          <div className="section">
+            <h2 className="section-title">
+              <i className="fas fa-fire"></i>
+              Popular This Week ({popularBooks.length})
+            </h2>
+            <div className="row">
+              {popularBooks.map(book => (
+                <BookCard key={book._id || book.id} book={book} />
+              ))}
+            </div>
+          </div>
+
+          {/* All Books */}
+          <div className="section">
+            <h2 className="section-title">
+              <i className="fas fa-book-open"></i>
+              All Books ({allBooks.length})
+            </h2>
+            <div className="row">
+              {allBooks.map(book => (
                 <BookCard key={book._id || book.id} book={book} />
               ))}
             </div>

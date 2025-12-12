@@ -207,6 +207,24 @@ function App() {
 
   const roleLabel = getRoleLabel();
 
+//   const redirectForRole = (role) => {
+//   const user = JSON.parse(localStorage.getItem("currentUser"));
+
+//   // If no user found in localStorage, stop redirect
+//   if (!user) return;
+
+//   if (role === "student") {
+//     navigate("/student");
+//   } 
+//   else if (role === "admin") {
+//     navigate("/admin");
+//   } 
+//   else if (role === "superadmin") {
+//     navigate("/superadmin");
+//   }
+// };
+
+
   return (
     <div className="shell">
       <div className="left">

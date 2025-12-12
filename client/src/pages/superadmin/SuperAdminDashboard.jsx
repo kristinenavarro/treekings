@@ -1,1027 +1,1076 @@
 import React, { useState, useEffect } from 'react';
-import './superadmin.css';
+import './SuperAdmin.css';
 
 const SuperAdminDashboard = () => {
-    // Initial admins data
-    const initialAdmins = [
-        { 
-            id: 1, 
-            name: 'Admin One', 
-            email: 'admin1@university.edu', 
-            role: 'Full Admin', 
-            status: 'Active', 
-            lastLogin: '2024-01-15',
-            permissions: ['all'],
-            createdAt: '2024-01-01'
-        },
-        { 
-            id: 2, 
-            name: 'Admin Two', 
-            email: 'admin2@university.edu', 
-            role: 'Library Admin', 
-            status: 'Active', 
-            lastLogin: '2024-01-14',
-            permissions: ['library', 'content'],
-            createdAt: '2024-01-05'
-        },
-        { 
-            id: 3, 
-            name: 'Admin Three', 
-            email: 'admin3@university.edu', 
-            role: 'Student Admin', 
-            status: 'Inactive', 
-            lastLogin: '2024-01-10',
-            permissions: ['students', 'reports'],
-            createdAt: '2024-01-08'
-        },
-        { 
-            id: 4, 
-            name: 'Admin Four', 
-            email: 'admin4@university.edu', 
-            role: 'Content Admin', 
-            status: 'Active', 
-            lastLogin: '2024-01-12',
-            permissions: ['content', 'media'],
-            createdAt: '2024-01-10'
-        }
-    ];
+  // State management
+  const [students, setStudents] = useState([]);
+  const [books, setBooks] = useState([]);
+  const [editingStudent, setEditingStudent] = useState(null);
+  const [editingBook, setEditingBook] = useState(null);
+  const [admins, setAdmins] = useState([]);
+  const [editingAdmin, setEditingAdmin] = useState(null);
+  const [notification, setNotification] = useState({ show: false, message: '', type: '' });
 
-    const [admins, setAdmins] = useState(initialAdmins);
-    const [formData, setFormData] = useState({
-        name: '',
-        email: '',
-        role: 'Library Admin',
-        status: 'Active',
-        password: '',
-        confirmPassword: '',
-        permissions: []
-    });
+ useEffect(() => {
+  const fetchData = async () => {
+    try {
+      const studentRes = await fetch("http://localhost:5000/api/students");
+      const bookRes = await fetch("http://localhost:5000/api/books");
+      const adminRes = await fetch("http://localhost:5000/api/admins");
+
+      const studentData = await studentRes.json();
+      const bookData = await bookRes.json();
+      const adminData = await adminRes.json();
+
+      // Ensure we set arrays, fallback to empty array if response is unexpected
+      setStudents(Array.isArray(studentData.data) ? studentData.data : []);
+      setBooks(Array.isArray(bookData.data) ? bookData.data : []);
+      setAdmins(Array.isArray(adminData.data) ? adminData.data : []);
+    } catch (error) {
+      console.error("Error fetching admin data:", error);
+      // fallback empty arrays
+      setStudents([]);
+      setBooks([]);
+    }
+  };
+
+  fetchData();
+}, []);
+
+
+  // Student form state
+  const [studentForm, setStudentForm] = useState({
+    name: '',
+    email: '',
+    password: '',
+    studentId: '',
+    department: '',
+    yearLevel: ''
+  });
+
+// Book form state
+const [bookForm, setBookForm] = useState({
+  isbn: '',
+  title: '',
+  author: '',
+  status: 'available',
+  category: 'all',
+  genre: '',
+  rating: '',
+  description: '',
+  copies: '1',
+  imageUrl: ''
+});
+
+//Admin form state
+const [adminForm, setAdminForm] = useState({
+  name: '',
+  email: '',
+  password: '',
+  role: 'admin'
+});
+
+  // Statistics
+const totalStudents = students.length;
+const totalBooks = books.length;
+const availableBooks = books.filter(book => book.status === 'available').length; // Changed from 'Available'
+const activeStudents = students.length;
+
+  // Show notification
+  const showNotification = (message, type = 'info') => {
+    setNotification({ show: true, message, type });
+    setTimeout(() => {
+      setNotification({ show: false, message: '', type: '' });
+    }, 3000);
+  };
+
+  // Handle student form change
+  const handleStudentFormChange = (e) => {
+    const { name, value } = e.target;
+    setStudentForm(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  // Handle book form change
+  const handleBookFormChange = (e) => {
+    const { name, value } = e.target;
+    setBookForm(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  // Handle admin form change
+  const handleAdminFormChange = (e) => {
+  const { name, value } = e.target;
+  setAdminForm(prev => ({
+    ...prev,
+    [name]: value
+  }));
+};
+
+  // Submit student form
+  const handleStudentSubmit = async (e) => {
+    e.preventDefault();
     
-    const [editingId, setEditingId] = useState(null);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [filterRole, setFilterRole] = useState('All');
-    const [filterStatus, setFilterStatus] = useState('All');
-    const [showModal, setShowModal] = useState(false);
-    const [selectedAdmin, setSelectedAdmin] = useState(null);
-    const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
-    const [showResetConfirm, setShowResetConfirm] = useState(null);
-    const [notification, setNotification] = useState(null);
+    const { name, email, password, studentId, department, yearLevel } = studentForm;
+    
+    if (editingStudent) {
+      // For editing, don't require password (only update if provided)
+      if (!name || !email || !studentId || !department || !yearLevel) {
+        showNotification("Please fill out all fields except password (optional for updates).", 'danger');
+        return;
+      }
+    } else {
+      // For new student, require all fields including password
+      if (!name || !email || !password || !studentId || !department || !yearLevel) {
+        showNotification("Please fill out all fields including password.", 'danger');
+        return;
+      }
+    }
 
-    // Available permissions based on role
-    const rolePermissions = {
-        'Full Admin': ['all'],
-        'Library Admin': ['library', 'content', 'reports'],
-        'Student Admin': ['students', 'attendance', 'reports'],
-        'Content Admin': ['content', 'media', 'announcements'],
-        'Report Admin': ['reports', 'analytics']
-    };
+    try {
+      if (editingStudent) {
+        // Update existing student via API
+        // Only include password if it was changed
+        const updateData = { name, email, studentId, department, yearLevel };
+        if (password) {
+          updateData.password = password;
+        }
 
-    // Available permissions list
-    const allPermissions = [
-        { id: 'all', label: 'All Permissions', description: 'Full system access' },
-        { id: 'library', label: 'Library Management', description: 'Manage books, resources, loans' },
-        { id: 'content', label: 'Content Management', description: 'Create and edit content' },
-        { id: 'students', label: 'Student Management', description: 'Manage student records' },
-        { id: 'reports', label: 'Reports', description: 'View and generate reports' },
-        { id: 'media', label: 'Media Management', description: 'Upload and manage media files' },
-        { id: 'announcements', label: 'Announcements', description: 'Create and manage announcements' },
-        { id: 'analytics', label: 'Analytics', description: 'View system analytics' },
-        { id: 'settings', label: 'System Settings', description: 'Modify system settings' }
-    ];
+        const response = await fetch(`http://localhost:5000/api/students/${editingStudent._id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(updateData),
+        });
 
-    // Filter admins
-    const filteredAdmins = admins.filter(admin => {
-        const matchesSearch = admin.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            admin.email.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesRole = filterRole === 'All' || admin.role === filterRole;
-        const matchesStatus = filterStatus === 'All' || admin.status === filterStatus;
-        return matchesSearch && matchesRole && matchesStatus;
+        const result = await response.json();
+
+        if (result.success) {
+          // Update local state with the updated student
+          const updatedStudents = students.map(student => 
+            student._id === editingStudent._id ? result.data : student
+          );
+          setStudents(updatedStudents);
+          showNotification(`${name}'s information has been updated.`, 'success');
+        } else {
+          showNotification(result.message || 'Failed to update student.', 'danger');
+        }
+      } else {
+        // Add new student via API
+        const response = await fetch('http://localhost:5000/api/students', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name,
+            email,
+            password,
+            studentId,
+            department,
+            yearLevel,
+            role: 'student'
+          }),
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          setStudents([result.data, ...students]);
+          showNotification(`${name} has been added to the directory.`, 'success');
+        } else {
+          showNotification(result.message || 'Failed to add student.', 'danger');
+        }
+      }
+
+      resetStudentForm();
+    } catch (error) {
+      console.error('Error submitting student:', error);
+      showNotification('An error occurred. Please try again.', 'danger');
+    }
+  };
+
+// Submit book form
+const handleBookSubmit = async (e) => {
+  e.preventDefault();
+  
+  const { isbn, title, author, status, category, genre, rating, description, copies, imageUrl } = bookForm;
+  
+  if (!title || !author) {
+    showNotification("Please fill out title and author fields.", 'danger');
+    return;
+  }
+
+  try {
+if (editingBook) {
+      // Update existing book via API
+      // Calculate availableCopies based on the difference
+      const oldCopies = editingBook.copies || 1;
+      const oldAvailable = editingBook.availableCopies !== undefined ? editingBook.availableCopies : oldCopies;
+      const newCopies = parseInt(copies) || 1;
+      
+      // Calculate how many are currently borrowed
+      const borrowed = oldCopies - oldAvailable;
+      
+      // New available copies = new total copies - borrowed copies
+      const newAvailableCopies = Math.max(0, newCopies - borrowed);
+      
+      const response = await fetch(`http://localhost:5000/api/books/${editingBook._id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          isbn,
+          title,
+          author,
+          status,
+          category,
+          genre,
+          rating: parseFloat(rating) || 0,
+          description,
+          copies: newCopies,
+          availableCopies: newAvailableCopies,
+          imageUrl
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        const updatedBooks = books.map(book => 
+          book._id === editingBook._id ? result.data : book
+        );
+        setBooks(updatedBooks);
+        showNotification(`"${title}" has been updated.`, 'success');
+        resetBookForm();
+      } else {
+        showNotification(result.message || 'Failed to update book.', 'danger');
+      }
+    } else {
+      // Add new book via API
+      const response = await fetch('http://localhost:5000/api/books', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          isbn,
+          title,
+          author,
+          status,
+          category,
+          genre,
+          rating: parseFloat(rating) || 0,
+          description,
+          copies: parseInt(copies) || 1,
+          availableCopies: parseInt(copies) || 1,
+          imageUrl
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setBooks([result.data, ...books]);
+        showNotification(`"${title}" has been added to the library.`, 'success');
+        resetBookForm();
+      } else {
+        showNotification(result.message || 'Failed to add book.', 'danger');
+      }
+    }
+
+  } catch (error) {
+    console.error('Error submitting book:', error);
+    showNotification('An error occurred. Please try again.', 'danger');
+  }
+};
+
+// Submit admin form
+const handleAdminSubmit = async (e) => {
+  e.preventDefault();
+  
+  const { name, email, password } = adminForm;
+  
+  if (editingAdmin) {
+    if (!name || !email) {
+      showNotification("Please fill out all fields except password (optional for updates).", 'danger');
+      return;
+    }
+  } else {
+    if (!name || !email || !password) {
+      showNotification("Please fill out all fields including password.", 'danger');
+      return;
+    }
+  }
+
+  try {
+    if (editingAdmin) {
+      const updateData = { name, email, role: 'admin' };
+      if (password) {
+        updateData.password = password;
+      }
+
+      const response = await fetch(`http://localhost:5000/api/admins/${editingAdmin._id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updateData),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        const updatedAdmins = admins.map(admin => 
+          admin._id === editingAdmin._id ? result.data : admin
+        );
+        setAdmins(updatedAdmins);
+        showNotification(`${name}'s information has been updated.`, 'success');
+      } else {
+        showNotification(result.message || 'Failed to update admin.', 'danger');
+      }
+    } else {
+      const response = await fetch('http://localhost:5000/api/admins', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name,
+          email,
+          password,
+          role: 'admin'
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setAdmins([result.data, ...admins]);
+        showNotification(`${name} has been added as admin.`, 'success');
+      } else {
+        showNotification(result.message || 'Failed to add admin.', 'danger');
+      }
+    }
+
+    resetAdminForm();
+  } catch (error) {
+    console.error('Error submitting admin:', error);
+    showNotification('An error occurred. Please try again.', 'danger');
+  }
+};
+
+  // Start editing a student
+  const startStudentEdit = (student) => {
+    setStudentForm({
+      name: student.name,
+      email: student.email,
+      password: '', // Leave password empty for editing
+      studentId: student.studentId,
+      department: student.department,
+      yearLevel: student.yearLevel
+    });
+    setEditingStudent(student);
+    
+    // Scroll to student form
+    document.querySelector('.student-section').scrollIntoView({ behavior: 'smooth' });
+  };
+
+  // Start editing a book
+const startBookEdit = (book) => {
+  setBookForm({
+    isbn: book.isbn || '',
+    title: book.title || '',
+    author: book.author || '',
+    status: book.status || 'available',
+    category: book.category || 'all',
+    genre: book.genre || '',
+    rating: book.rating || '',
+    description: book.description || '',
+    copies: book.copies || '1',
+    imageUrl: book.imageUrl || ''
+  });
+  setEditingBook(book);
+  
+  // Scroll to book form
+  document.querySelector('.book-section').scrollIntoView({ behavior: 'smooth' });
+};
+
+  // Delete a student
+  const deleteStudent = async (studentId) => {
+    const student = students.find(s => s._id === studentId);
+    if (!student) return;
+    
+    if (!window.confirm(`Are you sure you want to delete "${student.name}" from the directory?`)) return;
+    
+    try {
+      const response = await fetch(`http://localhost:5000/api/students/${studentId}`, {
+        method: 'DELETE',
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        const updatedStudents = students.filter(s => s._id !== studentId);
+        setStudents(updatedStudents);
+        resetStudentForm();
+        showNotification(`${student.name} has been removed from the directory.`, 'info');
+      } else {
+        showNotification(result.message || 'Failed to delete student.', 'danger');
+      }
+    } catch (error) {
+      console.error('Error deleting student:', error);
+      showNotification('An error occurred while deleting the student.', 'danger');
+    }
+  };
+
+// Delete a book
+const deleteBook = async (bookId) => {
+  const book = books.find(b => b._id === bookId);
+  if (!book) return;
+  
+  if (!window.confirm(`Are you sure you want to delete "${book.title}" from the library?`)) return;
+  
+  try {
+    const response = await fetch(`http://localhost:5000/api/books/${bookId}`, {
+      method: 'DELETE',
     });
 
-    // Stats calculations
-    const stats = {
-        totalAdmins: admins.length,
-        activeAdmins: admins.filter(a => a.status === 'Active').length,
-        fullAdmins: admins.filter(a => a.role === 'Full Admin').length,
-        inactiveAdmins: admins.filter(a => a.status === 'Inactive').length,
-        lastAdded: admins.length > 0 ? 
-            new Date(Math.max(...admins.map(a => new Date(a.createdAt)))).toLocaleDateString() : 
-            'N/A'
-    };
+    const result = await response.json();
 
-    // Handle input changes
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
+    if (result.success) {
+      const updatedBooks = books.filter(b => b._id !== bookId);
+      setBooks(updatedBooks);
+      resetBookForm();
+      showNotification(`"${book.title}" has been removed from the library.`, 'info');
+    } else {
+      showNotification(result.message || 'Failed to delete book.', 'danger');
+    }
+  } catch (error) {
+    console.error('Error deleting book:', error);
+    showNotification('An error occurred while deleting the book.', 'danger');
+  }
+};
 
-        // Reset permissions when role changes
-        if (name === 'role') {
-            const defaultPermissions = rolePermissions[value] || [];
-            setFormData(prev => ({
-                ...prev,
-                permissions: defaultPermissions,
-                [name]: value
-            }));
-        }
-    };
+  // Reset student form
+  const resetStudentForm = () => {
+    setStudentForm({
+      name: '',
+      email: '',
+      password: '',
+      studentId: '',
+      department: '',
+      yearLevel: ''
+    });
+    setEditingStudent(null);
+  };
 
-    // Handle permission toggle
-    const handlePermissionToggle = (permissionId) => {
-        setFormData(prev => {
-            const newPermissions = prev.permissions.includes(permissionId)
-                ? prev.permissions.filter(p => p !== permissionId)
-                : [...prev.permissions, permissionId];
-            
-            // If "all" is selected, only keep "all"
-            if (permissionId === 'all') {
-                return { ...prev, permissions: ['all'] };
-            }
-            
-            // If selecting any other permission when "all" is present, remove "all"
-            if (newPermissions.includes('all') && permissionId !== 'all') {
-                return { ...prev, permissions: newPermissions.filter(p => p !== 'all') };
-            }
-            
-            return { ...prev, permissions: newPermissions };
-        });
-    };
+// Reset book form
+const resetBookForm = () => {
+  setBookForm({
+    isbn: '',
+    title: '',
+    author: '',
+    status: 'available',
+    category: 'all',
+    genre: '',
+    rating: '',
+    description: '',
+    copies: '1',
+    imageUrl: ''
+  });
+  setEditingBook(null);
+};
 
-    // Show notification
-    const showNotification = (message, type = 'success') => {
-        setNotification({ message, type });
-        setTimeout(() => setNotification(null), 3000);
-    };
+  // Get status badge class
+const getStatusBadgeClass = (status) => {
+  // Convert to lowercase for comparison
+  const statusLower = status?.toLowerCase();
+  switch(statusLower) {
+    case 'active':
+    case 'available':
+      return 'status-active';
+    case 'on leave':
+      return 'status-leave';
+    case 'inactive':
+      return 'status-inactive';
+    case 'borrowed':
+      return 'status-borrowed';
+    default:
+      return '';
+  }
+};
 
-    // Handle form submission
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        
-        // Validation
-        if (!formData.name || !formData.email) {
-            showNotification('Please fill in all required fields', 'error');
-            return;
-        }
+  // Get status icon
+const getStatusIcon = (status) => {
+  // Convert to lowercase for comparison
+  const statusLower = status?.toLowerCase();
+  switch(statusLower) {
+    case 'active':
+    case 'available':
+      return 'fas fa-check-circle';
+    case 'on leave':
+      return 'fas fa-clock';
+    case 'inactive':
+      return 'fas fa-times-circle';
+    case 'borrowed':
+      return 'fas fa-book-reader';
+    default:
+      return 'fas fa-circle';
+  }
+};
 
-        if (!editingId && (!formData.password || !formData.confirmPassword)) {
-            showNotification('Please enter password', 'error');
-            return;
-        }
-
-        if (formData.password && formData.password !== formData.confirmPassword) {
-            showNotification('Passwords do not match!', 'error');
-            return;
-        }
-
-        if (formData.password && formData.password.length < 8) {
-            showNotification('Password must be at least 8 characters', 'error');
-            return;
-        }
-
-        if (editingId) {
-            // Update existing admin
-            setAdmins(prev => prev.map(admin => 
-                admin.id === editingId 
-                    ? { 
-                        ...admin,
-                        ...formData,
-                        lastLogin: admin.lastLogin,
-                        createdAt: admin.createdAt
-                    }
-                    : admin
-            ));
-            showNotification('Admin updated successfully!');
-        } else {
-            // Add new admin
-            const newAdmin = {
-                id: Date.now(),
-                ...formData,
-                lastLogin: new Date().toISOString().split('T')[0],
-                createdAt: new Date().toISOString().split('T')[0]
-            };
-            setAdmins(prev => [newAdmin, ...prev]);
-            showNotification('Admin added successfully!');
-        }
-
-        resetForm();
-    };
-
-    // Handle edit
-    const handleEdit = (admin) => {
-        setFormData({
-            name: admin.name,
-            email: admin.email,
-            role: admin.role,
-            status: admin.status,
-            password: '',
-            confirmPassword: '',
-            permissions: admin.permissions || []
-        });
-        setEditingId(admin.id);
-        setShowModal(true);
-    };
-
-    // Handle delete
-    const handleDelete = (id) => {
-        if (admins.length <= 1) {
-            showNotification('Cannot delete all admins', 'error');
-            return;
-        }
-        
-        setAdmins(prev => prev.filter(admin => admin.id !== id));
-        setShowDeleteConfirm(null);
-        showNotification('Admin deleted successfully!');
-    };
-
-    // Handle status toggle
-    const handleStatusToggle = (id) => {
-        setAdmins(prev => prev.map(admin => 
-            admin.id === id 
-                ? { 
-                    ...admin, 
-                    status: admin.status === 'Active' ? 'Inactive' : 'Active',
-                    lastLogin: new Date().toISOString().split('T')[0]
-                }
-                : admin
-        ));
-        showNotification('Admin status updated!');
-    };
-
-    // Handle reset password
-    const handleResetPassword = (id) => {
-        // Simulate API call
-        const admin = admins.find(a => a.id === id);
-        if (admin) {
-            // In real app, you would make an API call to send reset email
-            showNotification(`Password reset email sent to ${admin.email}`);
-            setShowResetConfirm(null);
-        }
-    };
-
-    // Reset form
-    const resetForm = () => {
-        setFormData({
-            name: '',
-            email: '',
-            role: 'Library Admin',
-            status: 'Active',
-            password: '',
-            confirmPassword: '',
-            permissions: []
-        });
-        setEditingId(null);
-        setShowModal(false);
-    };
-
-    // Export admins data
-    const exportAdmins = () => {
-        const dataStr = JSON.stringify(admins, null, 2);
-        const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-        const exportFileDefaultName = `admins-${new Date().toISOString().split('T')[0]}.json`;
-        
-        const linkElement = document.createElement('a');
-        linkElement.setAttribute('href', dataUri);
-        linkElement.setAttribute('download', exportFileDefaultName);
-        linkElement.click();
-        
-        showNotification('Admins data exported!');
-    };
-
-    // Import admins data
-    const importAdmins = (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            try {
-                const importedData = JSON.parse(event.target.result);
-                // Validate imported data
-                if (Array.isArray(importedData)) {
-                    setAdmins(prev => [...importedData, ...prev]);
-                    showNotification('Admins imported successfully!');
-                } else {
-                    showNotification('Invalid import file format', 'error');
-                }
-            } catch (error) {
-                showNotification('Error importing file', 'error');
-            }
-        };
-        reader.readAsText(file);
-    };
-
-    // Calculate password strength
-    const calculatePasswordStrength = (password) => {
-        if (!password) return 0;
-        let strength = 0;
-        if (password.length >= 8) strength += 25;
-        if (/[A-Z]/.test(password)) strength += 25;
-        if (/[0-9]/.test(password)) strength += 25;
-        if (/[^A-Za-z0-9]/.test(password)) strength += 25;
-        return strength;
-    };
-
-    return (
-        <div className="superadmin-dashboard">
-            {/* Notification */}
-            {notification && (
-                <div className={`notification notification-${notification.type}`}>
-                    <i className={`fas fa-${notification.type === 'success' ? 'check-circle' : 'exclamation-circle'}`}></i>
-                    {notification.message}
-                    <button className="notification-close" onClick={() => setNotification(null)}>
-                        <i className="fas fa-times"></i>
-                    </button>
-                </div>
-            )}
-
-            {/* Header */}
-            <header className="superadmin-header">
-                <div className="header-content">
-                    <div className="header-title">
-                        <i className="fas fa-shield-alt"></i>
-                        <div>
-                            <h1>SuperAdmin Dashboard</h1>
-                            <p className="header-subtitle">Manage all administrator accounts</p>
-                        </div>
-                    </div>
-                    <div className="header-info">
-                        <div className="header-stat">
-                            <i className="fas fa-users"></i>
-                            <span>{admins.length} Admins</span>
-                        </div>
-                    </div>
-                </div>
-                <div className="header-actions">
-                    <button className="btn btn-outline" onClick={exportAdmins}>
-                        <i className="fas fa-download"></i>
-                        Export
-                    </button>
-                    <label className="btn btn-outline">
-                        <i className="fas fa-upload"></i>
-                        Import
-                        <input 
-                            type="file" 
-                            accept=".json"
-                            onChange={importAdmins}
-                            style={{ display: 'none' }}
-                        />
-                    </label>
-                    <a href="index.html" className="logout-link">
-                        <i className="fas fa-sign-out-alt"></i>
-                        Logout
-                    </a>
-                </div>
-            </header>
-
-            <main className="superadmin-main">
-                {/* Stats Overview */}
-                <div className="stats-overview">
-                    <div className="stat-card stat-total">
-                        <div className="stat-icon">
-                            <i className="fas fa-user-shield"></i>
-                        </div>
-                        <div className="stat-content">
-                            <h3>{stats.totalAdmins}</h3>
-                            <p>Total Admins</p>
-                        </div>
-                    </div>
-                    <div className="stat-card stat-active">
-                        <div className="stat-icon">
-                            <i className="fas fa-user-check"></i>
-                        </div>
-                        <div className="stat-content">
-                            <h3>{stats.activeAdmins}</h3>
-                            <p>Active Admins</p>
-                        </div>
-                    </div>
-                    <div className="stat-card stat-full">
-                        <div className="stat-icon">
-                            <i className="fas fa-crown"></i>
-                        </div>
-                        <div className="stat-content">
-                            <h3>{stats.fullAdmins}</h3>
-                            <p>Full Admins</p>
-                        </div>
-                    </div>
-                    <div className="stat-card stat-inactive">
-                        <div className="stat-icon">
-                            <i className="fas fa-user-slash"></i>
-                        </div>
-                        <div className="stat-content">
-                            <h3>{stats.inactiveAdmins}</h3>
-                            <p>Inactive Admins</p>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Admin Management Section */}
-                <section className="section">
-                    <div className="section-header">
-                        <div className="section-header-content">
-                            <h2>
-                                <i className="fas fa-user-cog"></i>
-                                Admin Management
-                            </h2>
-                            <p className="section-subtitle">Manage administrator accounts, roles, and permissions</p>
-                        </div>
-                        <button 
-                            className="btn btn-primary"
-                            onClick={() => {
-                                resetForm();
-                                setShowModal(true);
-                            }}
-                        >
-                            <i className="fas fa-plus"></i>
-                            Add New Admin
-                        </button>
-                    </div>
-
-                    {/* Filters and Search */}
-                    <div className="management-toolbar">
-                        <div className="search-container">
-                            <i className="fas fa-search search-icon"></i>
-                            <input
-                                type="text"
-                                className="search-input"
-                                placeholder="Search admins by name or email..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                            />
-                            {searchTerm && (
-                                <button 
-                                    className="search-clear"
-                                    onClick={() => setSearchTerm('')}
-                                >
-                                    <i className="fas fa-times"></i>
-                                </button>
-                            )}
-                        </div>
-                        <div className="filter-group">
-                            <div className="filter-select-wrapper">
-                                <i className="fas fa-user-tag filter-icon"></i>
-                                <select 
-                                    className="filter-select"
-                                    value={filterRole}
-                                    onChange={(e) => setFilterRole(e.target.value)}
-                                >
-                                    <option value="All">All Roles</option>
-                                    <option value="Full Admin">Full Admin</option>
-                                    <option value="Library Admin">Library Admin</option>
-                                    <option value="Student Admin">Student Admin</option>
-                                    <option value="Content Admin">Content Admin</option>
-                                    <option value="Report Admin">Report Admin</option>
-                                </select>
-                            </div>
-                            <div className="filter-select-wrapper">
-                                <i className="fas fa-circle filter-icon"></i>
-                                <select 
-                                    className="filter-select"
-                                    value={filterStatus}
-                                    onChange={(e) => setFilterStatus(e.target.value)}
-                                >
-                                    <option value="All">All Status</option>
-                                    <option value="Active">Active</option>
-                                    <option value="Inactive">Inactive</option>
-                                    <option value="Suspended">Suspended</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Admins Table */}
-                    <div className="table-container">
-                        <table className="admins-table">
-                            <thead>
-                                <tr>
-                                    <th>Admin</th>
-                                    <th>Contact</th>
-                                    <th>Role & Permissions</th>
-                                    <th>Status</th>
-                                    <th>Activity</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {filteredAdmins.length > 0 ? (
-                                    filteredAdmins.map(admin => (
-                                        <tr key={admin.id} className={`admin-row ${admin.status.toLowerCase()}`}>
-                                            <td>
-                                                <div className="admin-info">
-                                                    <div className="admin-avatar">
-                                                        {admin.role === 'Full Admin' ? (
-                                                            <i className="fas fa-crown"></i>
-                                                        ) : (
-                                                            <i className="fas fa-user-shield"></i>
-                                                        )}
-                                                    </div>
-                                                    <div className="admin-details">
-                                                        <strong>{admin.name}</strong>
-                                                        <small>ID: {admin.id}</small>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <div className="contact-info">
-                                                    <div className="email">
-                                                        <i className="fas fa-envelope"></i>
-                                                        {admin.email}
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <div className="role-permissions">
-                                                    <span className="role-badge">{admin.role}</span>
-                                                    <div className="permissions-preview">
-                                                        {admin.permissions?.slice(0, 2).map((perm, index) => (
-                                                            <span key={index} className="permission-tag">
-                                                                {perm}
-                                                            </span>
-                                                        ))}
-                                                        {admin.permissions?.length > 2 && (
-                                                            <span className="permission-more">
-                                                                +{admin.permissions.length - 2} more
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <div className="status-container">
-                                                    <span className={`status-badge status-${admin.status.toLowerCase()}`}>
-                                                        <i className={`fas fa-circle${admin.status === 'Active' ? '' : '-slash'}`}></i>
-                                                        {admin.status}
-                                                    </span>
-                                                    <button 
-                                                        className="btn-status-toggle"
-                                                        onClick={() => handleStatusToggle(admin.id)}
-                                                        title={`Toggle ${admin.status === 'Active' ? 'Inactive' : 'Active'}`}
-                                                    >
-                                                        <i className={`fas fa-toggle-${admin.status === 'Active' ? 'on' : 'off'}`}></i>
-                                                    </button>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <div className="activity-info">
-                                                    <div className="last-login">
-                                                        <i className="fas fa-sign-in-alt"></i>
-                                                        Last: {admin.lastLogin}
-                                                    </div>
-                                                    <div className="created-at">
-                                                        <i className="fas fa-calendar-plus"></i>
-                                                        Created: {admin.createdAt}
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <div className="action-buttons">
-                                                    <button 
-                                                        className="btn-action btn-view"
-                                                        onClick={() => setSelectedAdmin(admin)}
-                                                        title="View Details"
-                                                    >
-                                                        <i className="fas fa-eye"></i>
-                                                    </button>
-                                                    <button 
-                                                        className="btn-action btn-edit"
-                                                        onClick={() => handleEdit(admin)}
-                                                        title="Edit Admin"
-                                                    >
-                                                        <i className="fas fa-edit"></i>
-                                                    </button>
-                                                    <button 
-                                                        className="btn-action btn-reset"
-                                                        onClick={() => setShowResetConfirm(admin.id)}
-                                                        title="Reset Password"
-                                                    >
-                                                        <i className="fas fa-key"></i>
-                                                    </button>
-                                                    <button 
-                                                        className="btn-action btn-danger"
-                                                        onClick={() => setShowDeleteConfirm(admin.id)}
-                                                        title="Delete Admin"
-                                                        disabled={admins.length <= 1}
-                                                    >
-                                                        <i className="fas fa-trash"></i>
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))
-                                ) : (
-                                    <tr>
-                                        <td colSpan="6" className="empty-table">
-                                            <div className="empty-state">
-                                                <i className="fas fa-user-shield"></i>
-                                                <h3>No Admins Found</h3>
-                                                <p>Try adjusting your filters or add a new admin</p>
-                                                <button 
-                                                    className="btn btn-primary"
-                                                    onClick={() => setShowModal(true)}
-                                                >
-                                                    <i className="fas fa-plus"></i>
-                                                    Add New Admin
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    {/* Summary */}
-                    <div className="table-summary">
-                        <div className="summary-left">
-                            Showing <strong>{filteredAdmins.length}</strong> of <strong>{admins.length}</strong> admins
-                        </div>
-                        <div className="summary-right">
-                            <div className="summary-stats">
-                                <span className="stat-indicator active">
-                                    <i className="fas fa-circle"></i>
-                                    Active: {stats.activeAdmins}
-                                </span>
-                                <span className="stat-indicator inactive">
-                                    <i className="fas fa-circle"></i>
-                                    Inactive: {stats.inactiveAdmins}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-            </main>
-
-            {/* Add/Edit Admin Modal */}
-            {showModal && (
-                <div className="modal-overlay" onClick={resetForm}>
-                    <div className="modal-content admin-modal" onClick={(e) => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h2>
-                                <i className="fas fa-user-plus"></i>
-                                {editingId ? 'Edit Admin' : 'Add New Admin'}
-                            </h2>
-                            <button className="close-modal" onClick={resetForm}>
-                                <i className="fas fa-times"></i>
-                            </button>
-                        </div>
-                        <form onSubmit={handleSubmit}>
-                            <div className="modal-body">
-                                <div className="form-section">
-                                    <h3>
-                                        <i className="fas fa-id-card"></i>
-                                        Basic Information
-                                    </h3>
-                                    <div className="form-row">
-                                        <div className="form-group">
-                                            <label htmlFor="name">
-                                                <i className="fas fa-user"></i> Full Name *
-                                            </label>
-                                            <input
-                                                type="text"
-                                                id="name"
-                                                name="name"
-                                                className="form-control"
-                                                placeholder="Enter admin's full name"
-                                                value={formData.name}
-                                                onChange={handleInputChange}
-                                                required
-                                            />
-                                        </div>
-                                        <div className="form-group">
-                                            <label htmlFor="email">
-                                                <i className="fas fa-envelope"></i> Email Address *
-                                            </label>
-                                            <input
-                                                type="email"
-                                                id="email"
-                                                name="email"
-                                                className="form-control"
-                                                placeholder="admin@university.edu"
-                                                value={formData.email}
-                                                onChange={handleInputChange}
-                                                required
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="form-section">
-                                    <h3>
-                                        <i className="fas fa-user-tag"></i>
-                                        Role & Status
-                                    </h3>
-                                    <div className="form-row">
-                                        <div className="form-group">
-                                            <label htmlFor="role">
-                                                <i className="fas fa-user-tag"></i> Role
-                                            </label>
-                                            <select
-                                                id="role"
-                                                name="role"
-                                                className="form-control"
-                                                value={formData.role}
-                                                onChange={handleInputChange}
-                                            >
-                                                <option value="Full Admin">Full Admin (All Permissions)</option>
-                                                <option value="Library Admin">Library Admin</option>
-                                                <option value="Student Admin">Student Admin</option>
-                                                <option value="Content Admin">Content Admin</option>
-                                                <option value="Report Admin">Report Admin</option>
-                                            </select>
-                                        </div>
-                                        <div className="form-group">
-                                            <label htmlFor="status">
-                                                <i className="fas fa-circle"></i> Status
-                                            </label>
-                                            <select
-                                                id="status"
-                                                name="status"
-                                                className="form-control"
-                                                value={formData.status}
-                                                onChange={handleInputChange}
-                                            >
-                                                <option value="Active">Active</option>
-                                                <option value="Inactive">Inactive</option>
-                                                <option value="Suspended">Suspended</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="form-section">
-                                    <h3>
-                                        <i className="fas fa-shield-alt"></i>
-                                        Permissions
-                                    </h3>
-                                    <div className="permissions-grid">
-                                        {allPermissions.map(permission => {
-                                            const isDisabled = formData.role !== 'Full Admin' && permission.id === 'all';
-                                            return (
-                                                <div 
-                                                    key={permission.id} 
-                                                    className={`permission-item ${
-                                                        formData.permissions.includes(permission.id) ? 'selected' : ''
-                                                    } ${isDisabled ? 'disabled' : ''}`}
-                                                    onClick={() => !isDisabled && handlePermissionToggle(permission.id)}
-                                                >
-                                                    <div className="permission-checkbox">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={formData.permissions.includes(permission.id)}
-                                                            onChange={() => {}}
-                                                            disabled={isDisabled}
-                                                        />
-                                                    </div>
-                                                    <div className="permission-content">
-                                                        <strong>{permission.label}</strong>
-                                                        <small>{permission.description}</small>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-
-                                <div className="form-section">
-                                    <h3>
-                                        <i className="fas fa-key"></i>
-                                        {editingId ? 'Change Password' : 'Set Password'}
-                                    </h3>
-                                    <div className="form-row">
-                                        <div className="form-group">
-                                            <label htmlFor="password">
-                                                <i className="fas fa-key"></i> 
-                                                {editingId ? 'New Password (leave blank to keep current)' : 'Password *'}
-                                            </label>
-                                            <input
-                                                type="password"
-                                                id="password"
-                                                name="password"
-                                                className="form-control"
-                                                placeholder={editingId ? "Enter new password if changing" : "Create a strong password"}
-                                                value={formData.password}
-                                                onChange={handleInputChange}
-                                                required={!editingId}
-                                            />
-                                        </div>
-                                        <div className="form-group">
-                                            <label htmlFor="confirmPassword">
-                                                <i className="fas fa-key"></i> Confirm Password *
-                                            </label>
-                                            <input
-                                                type="password"
-                                                id="confirmPassword"
-                                                name="confirmPassword"
-                                                className="form-control"
-                                                placeholder="Confirm the password"
-                                                value={formData.confirmPassword}
-                                                onChange={handleInputChange}
-                                                required={!editingId}
-                                            />
-                                        </div>
-                                    </div>
-                                    {formData.password && (
-                                        <div className="password-strength">
-                                            <div className="strength-meter">
-                                                <div 
-                                                    className="strength-bar"
-                                                    style={{ width: `${calculatePasswordStrength(formData.password)}%` }}
-                                                ></div>
-                                            </div>
-                                            <small>
-                                                Password strength: 
-                                                <span className="strength-text">
-                                                    {calculatePasswordStrength(formData.password) < 50 ? ' Weak' : 
-                                                     calculatePasswordStrength(formData.password) < 75 ? ' Fair' : ' Strong'}
-                                                </span>
-                                            </small>
-                                        </div>
-                                    )}
-                                    <div className="password-requirements">
-                                        <small>
-                                            <i className="fas fa-info-circle"></i>
-                                            Password must be at least 8 characters long and include uppercase, lowercase, numbers, and symbols
-                                        </small>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="modal-footer">
-                                <button type="button" className="btn btn-outline" onClick={resetForm}>
-                                    Cancel
-                                </button>
-                                <button type="submit" className="btn btn-primary">
-                                    <i className="fas fa-save"></i>
-                                    {editingId ? 'Update Admin' : 'Create Admin'}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
-
-            {/* Admin Details Modal */}
-            {selectedAdmin && (
-                <div className="modal-overlay" onClick={() => setSelectedAdmin(null)}>
-                    <div className="modal-content details-modal" onClick={(e) => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h2>
-                                <i className="fas fa-user-shield"></i>
-                                Admin Details
-                            </h2>
-                            <button className="close-modal" onClick={() => setSelectedAdmin(null)}>
-                                <i className="fas fa-times"></i>
-                            </button>
-                        </div>
-                        <div className="modal-body">
-                            <div className="admin-details">
-                                <div className="admin-profile">
-                                    <div className="admin-avatar large">
-                                        {selectedAdmin.role === 'Full Admin' ? (
-                                            <i className="fas fa-crown"></i>
-                                        ) : (
-                                            <i className="fas fa-user-shield"></i>
-                                        )}
-                                    </div>
-                                    <div className="admin-info">
-                                        <h3>{selectedAdmin.name}</h3>
-                                        <p className="admin-email">{selectedAdmin.email}</p>
-                                        <div className="admin-status">
-                                            <span className={`status-badge status-${selectedAdmin.status.toLowerCase()}`}>
-                                                {selectedAdmin.status}
-                                            </span>
-                                            <span className="role-badge">{selectedAdmin.role}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="details-grid">
-                                    <div className="detail-item">
-                                        <i className="fas fa-id-card"></i>
-                                        <div>
-                                            <label>Admin ID</label>
-                                            <p>{selectedAdmin.id}</p>
-                                        </div>
-                                    </div>
-                                    <div className="detail-item">
-                                        <i className="fas fa-calendar-check"></i>
-                                        <div>
-                                            <label>Last Login</label>
-                                            <p>{selectedAdmin.lastLogin}</p>
-                                        </div>
-                                    </div>
-                                    <div className="detail-item">
-                                        <i className="fas fa-calendar-plus"></i>
-                                        <div>
-                                            <label>Account Created</label>
-                                            <p>{selectedAdmin.createdAt}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="permissions-section">
-                                    <h4>
-                                        <i className="fas fa-shield-alt"></i>
-                                        Permissions
-                                    </h4>
-                                    <div className="permissions-list">
-                                        {selectedAdmin.permissions?.map(permission => {
-                                            const perm = allPermissions.find(p => p.id === permission);
-                                            return perm ? (
-                                                <div key={permission} className="permission-detail">
-                                                    <i className="fas fa-check-circle"></i>
-                                                    <div>
-                                                        <strong>{perm.label}</strong>
-                                                        <small>{perm.description}</small>
-                                                    </div>
-                                                </div>
-                                            ) : null;
-                                        })}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="modal-footer">
-                            <button 
-                                className="btn btn-primary"
-                                onClick={() => {
-                                    handleEdit(selectedAdmin);
-                                    setSelectedAdmin(null);
-                                }}
-                            >
-                                <i className="fas fa-edit"></i>
-                                Edit Admin
-                            </button>
-                            <button 
-                                className="btn btn-outline"
-                                onClick={() => {
-                                    setShowResetConfirm(selectedAdmin.id);
-                                    setSelectedAdmin(null);
-                                }}
-                            >
-                                <i className="fas fa-key"></i>
-                                Reset Password
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Delete Confirmation Modal */}
-            {showDeleteConfirm && (
-                <div className="modal-overlay" onClick={() => setShowDeleteConfirm(null)}>
-                    <div className="modal-content confirm-modal" onClick={(e) => e.stopPropagation()}>
-                        <div className="confirm-icon danger">
-                            <i className="fas fa-exclamation-triangle"></i>
-                        </div>
-                        <h3>Delete Admin</h3>
-                        <p>Are you sure you want to delete this admin? This action cannot be undone.</p>
-                        <div className="confirm-actions">
-                            <button 
-                                className="btn btn-outline"
-                                onClick={() => setShowDeleteConfirm(null)}
-                            >
-                                Cancel
-                            </button>
-                            <button 
-                                className="btn btn-danger"
-                                onClick={() => handleDelete(showDeleteConfirm)}
-                            >
-                                <i className="fas fa-trash"></i>
-                                Delete Admin
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Reset Password Confirmation Modal */}
-            {showResetConfirm && (
-                <div className="modal-overlay" onClick={() => setShowResetConfirm(null)}>
-                    <div className="modal-content confirm-modal" onClick={(e) => e.stopPropagation()}>
-                        <div className="confirm-icon warning">
-                            <i className="fas fa-key"></i>
-                        </div>
-                        <h3>Reset Password</h3>
-                        <p>Send password reset email to this admin?</p>
-                        <div className="confirm-actions">
-                            <button 
-                                className="btn btn-outline"
-                                onClick={() => setShowResetConfirm(null)}
-                            >
-                                Cancel
-                            </button>
-                            <button 
-                                className="btn btn-warning"
-                                onClick={() => handleResetPassword(showResetConfirm)}
-                            >
-                                <i className="fas fa-paper-plane"></i>
-                                Send Reset Email
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+  return (
+    <div className="admin-dashboard">
+      {/* Notification */}
+      {notification.show && (
+        <div className={`notification ${notification.type}`}>
+          <i className={notification.type === 'success' ? 'fas fa-check-circle' : 
+                       notification.type === 'danger' ? 'fas fa-exclamation-circle' : 'fas fa-info-circle'}></i>
+          <span>{notification.message}</span>
         </div>
-    );
+      )}
+
+      {/* Header */}
+      <header>
+        <div className="header-content">
+          <i className="fas fa-user-shield"></i>
+          <h1>Admin Dashboard</h1>
+        </div>
+        <a href="/" className="logout-link">
+          <i className="fas fa-sign-out-alt"></i>
+          Logout
+        </a>
+      </header>
+
+      {/* Main Content */}
+      <main>
+        {/* Stats Overview */}
+        <div className="stats-overview">
+          <div className="stat-card">
+            <i className="fas fa-users"></i>
+            <div className="stat-card-content">
+              <h3>{totalStudents}</h3>
+              <p>Total Students</p>
+            </div>
+          </div>
+          <div className="stat-card">
+            <i className="fas fa-book"></i>
+            <div className="stat-card-content">
+              <h3>{totalBooks}</h3>
+              <p>Total Books</p>
+            </div>
+          </div>
+          <div className="stat-card">
+            <i className="fas fa-check-circle"></i>
+            <div className="stat-card-content">
+              <h3>{availableBooks}</h3>
+              <p>Books Available</p>
+            </div>
+          </div>
+          <div className="stat-card">
+            <i className="fas fa-user-check"></i>
+            <div className="stat-card-content">
+              <h3>{activeStudents}</h3>
+              <p>Active Students</p>
+            </div>
+          </div>
+          <div className="stat-card">
+            <i className="fas fa-user-shield"></i>
+            <div className="stat-card-content">
+            <h3>{totalAdmins}</h3>
+            <p>Total Admins</p>
+            </div>
+        </div>
+        </div>
+
+        {/* Student Directory Section */}
+        <section className="section student-section">
+          <div className="section-header">
+            <i className="fas fa-users"></i>
+            <h2>Student Directory</h2>
+          </div>
+          <p className="section-description">
+            Manage student roster: add new students, update information, or remove records.
+          </p>
+
+          <form onSubmit={handleStudentSubmit}>
+            <div className="form-grid">
+              <div className="form-group">
+                <label htmlFor="studentName">
+                  <i className="fas fa-user"></i> Name
+                </label>
+                <input
+                  type="text"
+                  id="studentName"
+                  name="name"
+                  className="form-control"
+                  placeholder="Student name"
+                  value={studentForm.name}
+                  onChange={handleStudentFormChange}
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="studentEmail">
+                  <i className="fas fa-envelope"></i> Email
+                </label>
+                <input
+                  type="email"
+                  id="studentEmail"
+                  name="email"
+                  className="form-control"
+                  placeholder="student@example.com"
+                  value={studentForm.email}
+                  onChange={handleStudentFormChange}
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="studentPassword">
+                  <i className="fas fa-lock"></i> Password {editingStudent && <span style={{fontSize: '0.85em', color: '#666'}}>(leave blank to keep current)</span>}
+                </label>
+                <input
+                  type="password"
+                  id="studentPassword"
+                  name="password"
+                  className="form-control"
+                  placeholder={editingStudent ? "Enter new password (optional)" : "Password"}
+                  value={studentForm.password}
+                  onChange={handleStudentFormChange}
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="studentId">
+                  <i className="fas fa-id-card"></i> Student ID
+                </label>
+                <input
+                  type="text"
+                  id="studentId"
+                  name="studentId"
+                  className="form-control"
+                  placeholder="e.g. 2024-001"
+                  value={studentForm.studentId}
+                  onChange={handleStudentFormChange}
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="studentDepartment">
+                  <i className="fas fa-building"></i> Department
+                </label>
+                <input
+                  type="text"
+                  id="studentDepartment"
+                  name="department"
+                  className="form-control"
+                  placeholder="Department"
+                  value={studentForm.department}
+                  onChange={handleStudentFormChange}
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="studentYearLevel">
+                  <i className="fas fa-graduation-cap"></i> Year Level
+                </label>
+                <select
+                  id="studentYearLevel"
+                  name="yearLevel"
+                  className="form-control"
+                  value={studentForm.yearLevel}
+                  onChange={handleStudentFormChange}
+                >
+                  <option value="">Select Year Level</option>
+                  <option value="1">1st Year</option>
+                  <option value="2">2nd Year</option>
+                  <option value="3">3rd Year</option>
+                  <option value="4">4th Year</option>
+                  <option value="5">5th Year</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="form-actions">
+              <button type="submit" className="btn btn-primary">
+                <i className={editingStudent ? "fas fa-save" : "fas fa-plus"}></i>
+                <span>{editingStudent ? 'Save Changes' : 'Add Student'}</span>
+              </button>
+              {editingStudent && (
+                <button
+                  type="button"
+                  className="btn btn-outline"
+                  onClick={resetStudentForm}
+                >
+                  <i className="fas fa-times"></i>
+                  Cancel
+                </button>
+              )}
+            </div>
+          </form>
+
+          <div className="table-container">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th style={{ width: '20%' }}>
+                    <i className="fas fa-user"></i> Name
+                  </th>
+                  <th style={{ width: '20%' }}>
+                    <i className="fas fa-envelope"></i> Email
+                  </th>
+                  <th style={{ width: '15%' }}>
+                    <i className="fas fa-id-card"></i> Student ID
+                  </th>
+                  <th style={{ width: '15%' }}>
+                    <i className="fas fa-building"></i> Department
+                  </th>
+                  <th style={{ width: '10%' }}>
+                    <i className="fas fa-graduation-cap"></i> Year
+                  </th>
+                  <th style={{ width: '20%' }}>
+                    <i className="fas fa-cog"></i> Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {students.length === 0 ? (
+                  <tr>
+                    <td colSpan="6" className="empty-state">
+                      <i className="fas fa-users"></i>
+                      <h3>No Students Found</h3>
+                      <p>Add your first student above.</p>
+                    </td>
+                  </tr>
+                ) : (
+                  students.map(student => (
+                    <tr key={student._id}>
+                      <td>
+                        <div className="user-info">
+                          <div className="user-avatar">
+                            <i className="fas fa-user"></i>
+                          </div>
+                          <div>
+                            <div className="user-name">{student.name}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <div className="course-info">
+                          <i className="fas fa-envelope"></i>
+                          {student.email}
+                        </div>
+                      </td>
+                      <td>
+                        <div className="isbn-info">
+                          <i className="fas fa-id-card"></i>
+                          {student.studentId}
+                        </div>
+                      </td>
+                      <td>
+                        <div className="course-info">
+                          <i className="fas fa-building"></i>
+                          {student.department}
+                        </div>
+                      </td>
+                      <td>
+                        <div className="isbn-info">
+                          <i className="fas fa-graduation-cap"></i>
+                          Year {student.yearLevel}
+                        </div>
+                      </td>
+                      <td>
+                        <div className="actions">
+                          <button
+                            className="btn edit"
+                            onClick={() => startStudentEdit(student)}
+                          >
+                            <i className="fas fa-edit"></i>
+                            Edit
+                          </button>
+                          <button
+                            className="btn btn-danger"
+                            onClick={() => deleteStudent(student._id)}
+                          >
+                            <i className="fas fa-trash"></i>
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        {/* Books Section */}
+        <section className="section book-section">
+          <div className="section-header">
+            <i className="fas fa-books"></i>
+            <h2>Manage Books</h2>
+          </div>
+          <p className="section-description">
+            Add new titles to the collection, update availability, or remove outdated items.
+          </p>
+
+<form onSubmit={handleBookSubmit}>
+  <div className="form-grid">
+    <div className="form-group">
+      <label htmlFor="bookIsbn">
+        <i className="fas fa-barcode"></i> ISBN
+      </label>
+      <input
+        type="text"
+        id="bookIsbn"
+        name="isbn"
+        className="form-control"
+        placeholder="e.g. 978-0-00-000000-0"
+        value={bookForm.isbn}
+        onChange={handleBookFormChange}
+      />
+    </div>
+    <div className="form-group">
+      <label htmlFor="bookTitle">
+        <i className="fas fa-book"></i> Title
+      </label>
+      <input
+        type="text"
+        id="bookTitle"
+        name="title"
+        className="form-control"
+        placeholder="Book title"
+        value={bookForm.title}
+        onChange={handleBookFormChange}
+      />
+    </div>
+    <div className="form-group">
+      <label htmlFor="bookAuthor">
+        <i className="fas fa-user-pen"></i> Author
+      </label>
+      <input
+        type="text"
+        id="bookAuthor"
+        name="author"
+        className="form-control"
+        placeholder="Author name"
+        value={bookForm.author}
+        onChange={handleBookFormChange}
+      />
+    </div>
+    <div className="form-group">
+      <label htmlFor="bookCategory">
+        <i className="fas fa-tag"></i> Category
+      </label>
+      <select
+        id="bookCategory"
+        name="category"
+        className="form-control"
+        value={bookForm.category}
+        onChange={handleBookFormChange}
+      >
+        <option value="all">All</option>
+        <option value="featured">Featured</option>
+        <option value="popular">Popular</option>
+      </select>
+    </div>
+    <div className="form-group">
+      <label htmlFor="bookGenre">
+        <i className="fas fa-layer-group"></i> Genre
+      </label>
+      <input
+        type="text"
+        id="bookGenre"
+        name="genre"
+        className="form-control"
+        placeholder="e.g. Fantasy, Romance, Mystery"
+        value={bookForm.genre}
+        onChange={handleBookFormChange}
+      />
+    </div>
+    <div className="form-group">
+      <label htmlFor="bookRating">
+        <i className="fas fa-star"></i> Rating
+      </label>
+      <input
+        type="number"
+        id="bookRating"
+        name="rating"
+        className="form-control"
+        placeholder="0.0 - 5.0"
+        min="0"
+        max="5"
+        step="0.1"
+        value={bookForm.rating}
+        onChange={handleBookFormChange}
+      />
+    </div>
+    <div className="form-group">
+      <label htmlFor="bookCopies">
+        <i className="fas fa-copy"></i> Number of Copies
+      </label>
+      <input
+        type="number"
+        id="bookCopies"
+        name="copies"
+        className="form-control"
+        placeholder="1"
+        min="1"
+        value={bookForm.copies}
+        onChange={handleBookFormChange}
+      />
+    </div>
+    <div className="form-group">
+      <label htmlFor="bookStatus">
+        <i className="fas fa-circle"></i> Status
+      </label>
+      <select
+        id="bookStatus"
+        name="status"
+        className="form-control"
+        value={bookForm.status}
+        onChange={handleBookFormChange}
+      >
+        <option value="available">Available</option>
+        <option value="borrowed">Borrowed</option>
+      </select>
+    </div>
+    <div className="form-group">
+      <label htmlFor="bookImageUrl">
+        <i className="fas fa-image"></i> Image URL
+      </label>
+      <input
+        type="text"
+        id="bookImageUrl"
+        name="imageUrl"
+        className="form-control"
+        placeholder="https://example.com/image.jpg"
+        value={bookForm.imageUrl}
+        onChange={handleBookFormChange}
+      />
+    </div>
+    <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+      <label htmlFor="bookDescription">
+        <i className="fas fa-align-left"></i> Description
+      </label>
+      <textarea
+        id="bookDescription"
+        name="description"
+        className="form-control"
+        placeholder="Book description"
+        rows="3"
+        value={bookForm.description}
+        onChange={handleBookFormChange}
+      />
+    </div>
+  </div>
+
+  <div className="form-actions">
+    <button type="submit" className="btn btn-primary">
+      <i className={editingBook ? "fas fa-save" : "fas fa-plus"}></i>
+      <span>{editingBook ? 'Save Changes' : 'Add Book'}</span>
+    </button>
+    {editingBook && (
+      <button
+        type="button"
+        className="btn btn-outline"
+        onClick={resetBookForm}
+      >
+        <i className="fas fa-times"></i>
+        Cancel
+      </button>
+    )}
+  </div>
+</form>
+
+          <div className="table-container">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th style={{ width: '20%' }}>
+                    <i className="fas fa-barcode"></i> ISBN
+                  </th>
+                  <th style={{ width: '35%' }}>
+                    <i className="fas fa-book"></i> Title
+                  </th>
+                  <th style={{ width: '25%' }}>
+                    <i className="fas fa-user-pen"></i> Author
+                  </th>
+                  <th style={{ width: '10%' }}>
+                    <i className="fas fa-circle"></i> Status
+                  </th>
+                  <th style={{ width: '10%' }}>
+                    <i className="fas fa-cog"></i> Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {books.length === 0 ? (
+                  <tr>
+                    <td colSpan="5" className="empty-state">
+                      <i className="fas fa-books"></i>
+                      <h3>No Books Found</h3>
+                      <p>Add your first book above.</p>
+                    </td>
+                  </tr>
+                ) : (
+                  books.map(book => (
+                    <tr key={book._id}>
+                      <td>
+                        <div className="isbn-info">
+                          <i className="fas fa-barcode"></i>
+                          {book.isbn}
+                        </div>
+                      </td>
+                      <td>
+                        <div className="book-info">
+                          <i className="fas fa-book"></i>
+                          {book.title}
+                        </div>
+                      </td>
+                      <td>
+                        <div className="author-info">
+                          <i className="fas fa-user-pen"></i>
+                          {book.author}
+                        </div>
+                      </td>
+                      <td>
+                        <span className={`status-badge ${getStatusBadgeClass(book.status)}`}>
+                          <i className={getStatusIcon(book.status)}></i>
+                          {book.status}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="actions">
+                          <button
+                            className="btn edit"
+                            onClick={() => startBookEdit(book)}
+                          >
+                            <i className="fas fa-edit"></i>
+                            Edit
+                          </button>
+                          <button
+                            className="btn btn-danger"
+                            onClick={() => deleteBook(book._id)}
+                          >
+                            <i className="fas fa-trash"></i>
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+  );
 };
 
 export default SuperAdminDashboard;
