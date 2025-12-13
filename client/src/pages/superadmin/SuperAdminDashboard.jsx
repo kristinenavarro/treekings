@@ -11,32 +11,32 @@ const SuperAdminDashboard = () => {
   const [editingAdmin, setEditingAdmin] = useState(null);
   const [notification, setNotification] = useState({ show: false, message: '', type: '' });
 
- useEffect(() => {
-  const fetchData = async () => {
-    try {
-      const studentRes = await fetch("http://localhost:5000/api/students");
-      const bookRes = await fetch("http://localhost:5000/api/books");
-      const adminRes = await fetch("http://localhost:5000/api/admins");
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const studentRes = await fetch("http://localhost:5000/api/students");
+        const bookRes = await fetch("http://localhost:5000/api/books");
+        const adminRes = await fetch("http://localhost:5000/api/admins");
 
-      const studentData = await studentRes.json();
-      const bookData = await bookRes.json();
-      const adminData = await adminRes.json();
+        const studentData = await studentRes.json();
+        const bookData = await bookRes.json();
+        const adminData = await adminRes.json();
 
-      // Ensure we set arrays, fallback to empty array if response is unexpected
-      setStudents(Array.isArray(studentData.data) ? studentData.data : []);
-      setBooks(Array.isArray(bookData.data) ? bookData.data : []);
-      setAdmins(Array.isArray(adminData.data) ? adminData.data : []);
-    } catch (error) {
-      console.error("Error fetching admin data:", error);
-      // fallback empty arrays
-      setStudents([]);
-      setBooks([]);
-    }
-  };
+        // Ensure we set arrays, fallback to empty array if response is unexpected
+        setStudents(Array.isArray(studentData.data) ? studentData.data : []);
+        setBooks(Array.isArray(bookData.data) ? bookData.data : []);
+        setAdmins(Array.isArray(adminData.data) ? adminData.data : []);
+      } catch (error) {
+        console.error("Error fetching admin data:", error);
+        // fallback empty arrays
+        setStudents([]);
+        setBooks([]);
+        setAdmins([]);
+      }
+    };
 
-  fetchData();
-}, []);
-
+    fetchData();
+  }, []);
 
   // Student form state
   const [studentForm, setStudentForm] = useState({
@@ -48,33 +48,34 @@ const SuperAdminDashboard = () => {
     yearLevel: ''
   });
 
-// Book form state
-const [bookForm, setBookForm] = useState({
-  isbn: '',
-  title: '',
-  author: '',
-  status: 'available',
-  category: 'all',
-  genre: '',
-  rating: '',
-  description: '',
-  copies: '1',
-  imageUrl: ''
-});
+  // Book form state
+  const [bookForm, setBookForm] = useState({
+    isbn: '',
+    title: '',
+    author: '',
+    status: 'available',
+    category: 'all',
+    genre: '',
+    rating: '',
+    description: '',
+    copies: '1',
+    imageUrl: ''
+  });
 
-//Admin form state
-const [adminForm, setAdminForm] = useState({
-  name: '',
-  email: '',
-  password: '',
-  role: 'admin'
-});
+  // Admin form state
+  const [adminForm, setAdminForm] = useState({
+    name: '',
+    email: '',
+    password: '',
+    role: 'admin'
+  });
 
   // Statistics
-const totalStudents = students.length;
-const totalBooks = books.length;
-const availableBooks = books.filter(book => book.status === 'available').length; // Changed from 'Available'
-const activeStudents = students.length;
+  const totalStudents = students.length;
+  const totalBooks = books.length;
+  const availableBooks = books.filter(book => book.status === 'available').length;
+  const activeStudents = students.length;
+  const totalAdmins = admins.length;
 
   // Show notification
   const showNotification = (message, type = 'info') => {
@@ -104,12 +105,12 @@ const activeStudents = students.length;
 
   // Handle admin form change
   const handleAdminFormChange = (e) => {
-  const { name, value } = e.target;
-  setAdminForm(prev => ({
-    ...prev,
-    [name]: value
-  }));
-};
+    const { name, value } = e.target;
+    setAdminForm(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
 
   // Submit student form
   const handleStudentSubmit = async (e) => {
@@ -134,7 +135,6 @@ const activeStudents = students.length;
     try {
       if (editingStudent) {
         // Update existing student via API
-        // Only include password if it was changed
         const updateData = { name, email, studentId, department, yearLevel };
         if (password) {
           updateData.password = password;
@@ -195,102 +195,103 @@ const activeStudents = students.length;
     }
   };
 
-// Submit book form
-const handleBookSubmit = async (e) => {
-  e.preventDefault();
-  
-  const { isbn, title, author, status, category, genre, rating, description, copies, imageUrl } = bookForm;
-  
-  if (!title || !author) {
-    showNotification("Please fill out title and author fields.", 'danger');
-    return;
-  }
-
-  try {
-if (editingBook) {
-      // Update existing book via API
-      // Calculate availableCopies based on the difference
-      const oldCopies = editingBook.copies || 1;
-      const oldAvailable = editingBook.availableCopies !== undefined ? editingBook.availableCopies : oldCopies;
-      const newCopies = parseInt(copies) || 1;
-      
-      // Calculate how many are currently borrowed
-      const borrowed = oldCopies - oldAvailable;
-      
-      // New available copies = new total copies - borrowed copies
-      const newAvailableCopies = Math.max(0, newCopies - borrowed);
-      
-      const response = await fetch(`http://localhost:5000/api/books/${editingBook._id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          isbn,
-          title,
-          author,
-          status,
-          category,
-          genre,
-          rating: parseFloat(rating) || 0,
-          description,
-          copies: newCopies,
-          availableCopies: newAvailableCopies,
-          imageUrl
-        }),
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        const updatedBooks = books.map(book => 
-          book._id === editingBook._id ? result.data : book
-        );
-        setBooks(updatedBooks);
-        showNotification(`"${title}" has been updated.`, 'success');
-        resetBookForm();
-      } else {
-        showNotification(result.message || 'Failed to update book.', 'danger');
-      }
-    } else {
-      // Add new book via API
-      const response = await fetch('http://localhost:5000/api/books', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          isbn,
-          title,
-          author,
-          status,
-          category,
-          genre,
-          rating: parseFloat(rating) || 0,
-          description,
-          copies: parseInt(copies) || 1,
-          availableCopies: parseInt(copies) || 1,
-          imageUrl
-        }),
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        setBooks([result.data, ...books]);
-        showNotification(`"${title}" has been added to the library.`, 'success');
-        resetBookForm();
-      } else {
-        showNotification(result.message || 'Failed to add book.', 'danger');
-      }
+  // Submit book form
+  const handleBookSubmit = async (e) => {
+    e.preventDefault();
+    
+    const { isbn, title, author, status, category, genre, rating, description, copies, imageUrl } = bookForm;
+    
+    if (!title || !author) {
+      showNotification("Please fill out title and author fields.", 'danger');
+      return;
     }
 
-  } catch (error) {
-    console.error('Error submitting book:', error);
-    showNotification('An error occurred. Please try again.', 'danger');
-  }
-};
+    try {
+      if (editingBook) {
+        // Update existing book via API
+        const oldCopies = editingBook.copies || 1;
+        const oldAvailable = editingBook.availableCopies !== undefined ? editingBook.availableCopies : oldCopies;
+        const newCopies = parseInt(copies) || 1;
+        
+        // Calculate how many are currently borrowed
+        const borrowed = oldCopies - oldAvailable;
+        
+        // New available copies = new total copies - borrowed copies
+        const newAvailableCopies = Math.max(0, newCopies - borrowed);
+        
+        const response = await fetch(`http://localhost:5000/api/books/${editingBook._id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            isbn,
+            title,
+            author,
+            status,
+            category,
+            genre,
+            rating: parseFloat(rating) || 0,
+            description,
+            copies: newCopies,
+            availableCopies: newAvailableCopies,
+            imageUrl
+          }),
+        });
 
+        const result = await response.json();
+
+        if (result.success) {
+          const updatedBooks = books.map(book => 
+            book._id === editingBook._id ? result.data : book
+          );
+          setBooks(updatedBooks);
+          showNotification(`"${title}" has been updated.`, 'success');
+          resetBookForm();
+        } else {
+          showNotification(result.message || 'Failed to update book.', 'danger');
+        }
+      } else {
+        // Add new book via API
+        const response = await fetch('http://localhost:5000/api/books', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            isbn,
+            title,
+            author,
+            status,
+            category,
+            genre,
+            rating: parseFloat(rating) || 0,
+            description,
+            copies: parseInt(copies) || 1,
+            availableCopies: parseInt(copies) || 1,
+            imageUrl
+          }),
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          setBooks([result.data, ...books]);
+          showNotification(`"${title}" has been added to the library.`, 'success');
+          resetBookForm();
+        } else {
+          showNotification(result.message || 'Failed to add book.', 'danger');
+        }
+      }
+
+    } catch (error) {
+      console.error('Error submitting book:', error);
+      showNotification('An error occurred. Please try again.', 'danger');
+    }
+  };
+
+  // Submit admin form
+  
 // Submit admin form
 const handleAdminSubmit = async (e) => {
   e.preventDefault();
@@ -311,6 +312,7 @@ const handleAdminSubmit = async (e) => {
 
   try {
     if (editingAdmin) {
+      // Update existing admin via API
       const updateData = { name, email, role: 'admin' };
       if (password) {
         updateData.password = password;
@@ -327,15 +329,18 @@ const handleAdminSubmit = async (e) => {
       const result = await response.json();
 
       if (result.success) {
+        // Update local state with the updated admin
         const updatedAdmins = admins.map(admin => 
           admin._id === editingAdmin._id ? result.data : admin
         );
         setAdmins(updatedAdmins);
         showNotification(`${name}'s information has been updated.`, 'success');
+        resetAdminForm();
       } else {
         showNotification(result.message || 'Failed to update admin.', 'danger');
       }
     } else {
+      // Add new admin via API
       const response = await fetch('http://localhost:5000/api/admins', {
         method: 'POST',
         headers: {
@@ -354,18 +359,16 @@ const handleAdminSubmit = async (e) => {
       if (result.success) {
         setAdmins([result.data, ...admins]);
         showNotification(`${name} has been added as admin.`, 'success');
+        resetAdminForm();
       } else {
         showNotification(result.message || 'Failed to add admin.', 'danger');
       }
     }
-
-    resetAdminForm();
   } catch (error) {
-    console.error('Error submitting admin:', error);
-    showNotification('An error occurred. Please try again.', 'danger');
+    console.error('Network error:', error);
+    showNotification('Network error. Please check your connection and try again.', 'danger');
   }
 };
-
   // Start editing a student
   const startStudentEdit = (student) => {
     setStudentForm({
@@ -383,24 +386,38 @@ const handleAdminSubmit = async (e) => {
   };
 
   // Start editing a book
-const startBookEdit = (book) => {
-  setBookForm({
-    isbn: book.isbn || '',
-    title: book.title || '',
-    author: book.author || '',
-    status: book.status || 'available',
-    category: book.category || 'all',
-    genre: book.genre || '',
-    rating: book.rating || '',
-    description: book.description || '',
-    copies: book.copies || '1',
-    imageUrl: book.imageUrl || ''
-  });
-  setEditingBook(book);
-  
-  // Scroll to book form
-  document.querySelector('.book-section').scrollIntoView({ behavior: 'smooth' });
-};
+  const startBookEdit = (book) => {
+    setBookForm({
+      isbn: book.isbn || '',
+      title: book.title || '',
+      author: book.author || '',
+      status: book.status || 'available',
+      category: book.category || 'all',
+      genre: book.genre || '',
+      rating: book.rating || '',
+      description: book.description || '',
+      copies: book.copies || '1',
+      imageUrl: book.imageUrl || ''
+    });
+    setEditingBook(book);
+    
+    // Scroll to book form
+    document.querySelector('.book-section').scrollIntoView({ behavior: 'smooth' });
+  };
+
+  // Start editing an admin
+  const startAdminEdit = (admin) => {
+    setAdminForm({
+      name: admin.name,
+      email: admin.email,
+      password: '', // Leave password empty for editing
+      role: 'admin'
+    });
+    setEditingAdmin(admin);
+    
+    // Scroll to admin form
+    document.querySelector('.admin-section').scrollIntoView({ behavior: 'smooth' });
+  };
 
   // Delete a student
   const deleteStudent = async (studentId) => {
@@ -430,33 +447,67 @@ const startBookEdit = (book) => {
     }
   };
 
-// Delete a book
-const deleteBook = async (bookId) => {
-  const book = books.find(b => b._id === bookId);
-  if (!book) return;
-  
-  if (!window.confirm(`Are you sure you want to delete "${book.title}" from the library?`)) return;
-  
-  try {
-    const response = await fetch(`http://localhost:5000/api/books/${bookId}`, {
-      method: 'DELETE',
-    });
+  // Delete a book
+  const deleteBook = async (bookId) => {
+    const book = books.find(b => b._id === bookId);
+    if (!book) return;
+    
+    if (!window.confirm(`Are you sure you want to delete "${book.title}" from the library?`)) return;
+    
+    try {
+      const response = await fetch(`http://localhost:5000/api/books/${bookId}`, {
+        method: 'DELETE',
+      });
 
-    const result = await response.json();
+      const result = await response.json();
 
-    if (result.success) {
-      const updatedBooks = books.filter(b => b._id !== bookId);
-      setBooks(updatedBooks);
-      resetBookForm();
-      showNotification(`"${book.title}" has been removed from the library.`, 'info');
-    } else {
-      showNotification(result.message || 'Failed to delete book.', 'danger');
+      if (result.success) {
+        const updatedBooks = books.filter(b => b._id !== bookId);
+        setBooks(updatedBooks);
+        resetBookForm();
+        showNotification(`"${book.title}" has been removed from the library.`, 'info');
+      } else {
+        showNotification(result.message || 'Failed to delete book.', 'danger');
+      }
+    } catch (error) {
+      console.error('Error deleting book:', error);
+      showNotification('An error occurred while deleting the book.', 'danger');
     }
-  } catch (error) {
-    console.error('Error deleting book:', error);
-    showNotification('An error occurred while deleting the book.', 'danger');
-  }
-};
+  };
+
+  // Delete an admin
+  const deleteAdmin = async (adminId) => {
+    const admin = admins.find(a => a._id === adminId);
+    if (!admin) return;
+    
+    // Prevent deleting yourself
+    if (admin.email === "superadmin@example.com") {
+      showNotification("Super admin cannot be deleted.", 'danger');
+      return;
+    }
+    
+    if (!window.confirm(`Are you sure you want to delete "${admin.name}" as an admin?`)) return;
+    
+    try {
+      const response = await fetch(`http://localhost:5000/api/admins/${adminId}`, {
+        method: 'DELETE',
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        const updatedAdmins = admins.filter(a => a._id !== adminId);
+        setAdmins(updatedAdmins);
+        resetAdminForm();
+        showNotification(`${admin.name} has been removed as admin.`, 'info');
+      } else {
+        showNotification(result.message || 'Failed to delete admin.', 'danger');
+      }
+    } catch (error) {
+      console.error('Error deleting admin:', error);
+      showNotification('An error occurred while deleting the admin.', 'danger');
+    }
+  };
 
   // Reset student form
   const resetStudentForm = () => {
@@ -471,60 +522,69 @@ const deleteBook = async (bookId) => {
     setEditingStudent(null);
   };
 
-// Reset book form
-const resetBookForm = () => {
-  setBookForm({
-    isbn: '',
-    title: '',
-    author: '',
-    status: 'available',
-    category: 'all',
-    genre: '',
-    rating: '',
-    description: '',
-    copies: '1',
-    imageUrl: ''
-  });
-  setEditingBook(null);
-};
+  // Reset book form
+  const resetBookForm = () => {
+    setBookForm({
+      isbn: '',
+      title: '',
+      author: '',
+      status: 'available',
+      category: 'all',
+      genre: '',
+      rating: '',
+      description: '',
+      copies: '1',
+      imageUrl: ''
+    });
+    setEditingBook(null);
+  };
+
+  // Reset admin form
+  const resetAdminForm = () => {
+    setAdminForm({
+      name: '',
+      email: '',
+      password: '',
+      role: 'admin'
+    });
+    setEditingAdmin(null);
+  };
 
   // Get status badge class
-const getStatusBadgeClass = (status) => {
-  // Convert to lowercase for comparison
-  const statusLower = status?.toLowerCase();
-  switch(statusLower) {
-    case 'active':
-    case 'available':
-      return 'status-active';
-    case 'on leave':
-      return 'status-leave';
-    case 'inactive':
-      return 'status-inactive';
-    case 'borrowed':
-      return 'status-borrowed';
-    default:
-      return '';
-  }
-};
+  const getStatusBadgeClass = (status) => {
+    const statusLower = status?.toLowerCase();
+    switch(statusLower) {
+      case 'active':
+      case 'available':
+        return 'status-active';
+      case 'on leave':
+        return 'status-leave';
+      case 'inactive':
+        return 'status-inactive';
+      case 'borrowed':
+        return 'status-borrowed';
+      default:
+        return '';
+    }
+  };
 
   // Get status icon
-const getStatusIcon = (status) => {
-  // Convert to lowercase for comparison
-  const statusLower = status?.toLowerCase();
-  switch(statusLower) {
-    case 'active':
-    case 'available':
-      return 'fas fa-check-circle';
-    case 'on leave':
-      return 'fas fa-clock';
-    case 'inactive':
-      return 'fas fa-times-circle';
-    case 'borrowed':
-      return 'fas fa-book-reader';
-    default:
-      return 'fas fa-circle';
-  }
-};
+  const getStatusIcon = (status) => {
+    const statusLower = status?.toLowerCase();
+    switch(statusLower) {
+      case 'active':
+      case 'available':
+        return 'fas fa-check-circle';
+      case 'on leave':
+        return 'fas fa-clock';
+      case 'inactive':
+        return 'fas fa-times-circle';
+      case 'borrowed':
+        return 'fas fa-book-reader';
+      default:
+        return 'fas fa-circle';
+    }
+  };
 
   return (
     <div className="admin-dashboard">
@@ -541,7 +601,7 @@ const getStatusIcon = (status) => {
       <header>
         <div className="header-content">
           <i className="fas fa-user-shield"></i>
-          <h1>Admin Dashboard</h1>
+          <h1>Super Admin Dashboard</h1>
         </div>
         <a href="/" className="logout-link">
           <i className="fas fa-sign-out-alt"></i>
@@ -584,10 +644,10 @@ const getStatusIcon = (status) => {
           <div className="stat-card">
             <i className="fas fa-user-shield"></i>
             <div className="stat-card-content">
-            <h3>{totalAdmins}</h3>
-            <p>Total Admins</p>
+              <h3>{totalAdmins}</h3>
+              <p>Total Admins</p>
             </div>
-        </div>
+          </div>
         </div>
 
         {/* Student Directory Section */}
@@ -817,174 +877,174 @@ const getStatusIcon = (status) => {
             Add new titles to the collection, update availability, or remove outdated items.
           </p>
 
-<form onSubmit={handleBookSubmit}>
-  <div className="form-grid">
-    <div className="form-group">
-      <label htmlFor="bookIsbn">
-        <i className="fas fa-barcode"></i> ISBN
-      </label>
-      <input
-        type="text"
-        id="bookIsbn"
-        name="isbn"
-        className="form-control"
-        placeholder="e.g. 978-0-00-000000-0"
-        value={bookForm.isbn}
-        onChange={handleBookFormChange}
-      />
-    </div>
-    <div className="form-group">
-      <label htmlFor="bookTitle">
-        <i className="fas fa-book"></i> Title
-      </label>
-      <input
-        type="text"
-        id="bookTitle"
-        name="title"
-        className="form-control"
-        placeholder="Book title"
-        value={bookForm.title}
-        onChange={handleBookFormChange}
-      />
-    </div>
-    <div className="form-group">
-      <label htmlFor="bookAuthor">
-        <i className="fas fa-user-pen"></i> Author
-      </label>
-      <input
-        type="text"
-        id="bookAuthor"
-        name="author"
-        className="form-control"
-        placeholder="Author name"
-        value={bookForm.author}
-        onChange={handleBookFormChange}
-      />
-    </div>
-    <div className="form-group">
-      <label htmlFor="bookCategory">
-        <i className="fas fa-tag"></i> Category
-      </label>
-      <select
-        id="bookCategory"
-        name="category"
-        className="form-control"
-        value={bookForm.category}
-        onChange={handleBookFormChange}
-      >
-        <option value="all">All</option>
-        <option value="featured">Featured</option>
-        <option value="popular">Popular</option>
-      </select>
-    </div>
-    <div className="form-group">
-      <label htmlFor="bookGenre">
-        <i className="fas fa-layer-group"></i> Genre
-      </label>
-      <input
-        type="text"
-        id="bookGenre"
-        name="genre"
-        className="form-control"
-        placeholder="e.g. Fantasy, Romance, Mystery"
-        value={bookForm.genre}
-        onChange={handleBookFormChange}
-      />
-    </div>
-    <div className="form-group">
-      <label htmlFor="bookRating">
-        <i className="fas fa-star"></i> Rating
-      </label>
-      <input
-        type="number"
-        id="bookRating"
-        name="rating"
-        className="form-control"
-        placeholder="0.0 - 5.0"
-        min="0"
-        max="5"
-        step="0.1"
-        value={bookForm.rating}
-        onChange={handleBookFormChange}
-      />
-    </div>
-    <div className="form-group">
-      <label htmlFor="bookCopies">
-        <i className="fas fa-copy"></i> Number of Copies
-      </label>
-      <input
-        type="number"
-        id="bookCopies"
-        name="copies"
-        className="form-control"
-        placeholder="1"
-        min="1"
-        value={bookForm.copies}
-        onChange={handleBookFormChange}
-      />
-    </div>
-    <div className="form-group">
-      <label htmlFor="bookStatus">
-        <i className="fas fa-circle"></i> Status
-      </label>
-      <select
-        id="bookStatus"
-        name="status"
-        className="form-control"
-        value={bookForm.status}
-        onChange={handleBookFormChange}
-      >
-        <option value="available">Available</option>
-        <option value="borrowed">Borrowed</option>
-      </select>
-    </div>
-    <div className="form-group">
-      <label htmlFor="bookImageUrl">
-        <i className="fas fa-image"></i> Image URL
-      </label>
-      <input
-        type="text"
-        id="bookImageUrl"
-        name="imageUrl"
-        className="form-control"
-        placeholder="https://example.com/image.jpg"
-        value={bookForm.imageUrl}
-        onChange={handleBookFormChange}
-      />
-    </div>
-    <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-      <label htmlFor="bookDescription">
-        <i className="fas fa-align-left"></i> Description
-      </label>
-      <textarea
-        id="bookDescription"
-        name="description"
-        className="form-control"
-        placeholder="Book description"
-        rows="3"
-        value={bookForm.description}
-        onChange={handleBookFormChange}
-      />
-    </div>
-  </div>
+          <form onSubmit={handleBookSubmit}>
+            <div className="form-grid">
+              <div className="form-group">
+                <label htmlFor="bookIsbn">
+                  <i className="fas fa-barcode"></i> ISBN
+                </label>
+                <input
+                  type="text"
+                  id="bookIsbn"
+                  name="isbn"
+                  className="form-control"
+                  placeholder="e.g. 978-0-00-000000-0"
+                  value={bookForm.isbn}
+                  onChange={handleBookFormChange}
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="bookTitle">
+                  <i className="fas fa-book"></i> Title
+                </label>
+                <input
+                  type="text"
+                  id="bookTitle"
+                  name="title"
+                  className="form-control"
+                  placeholder="Book title"
+                  value={bookForm.title}
+                  onChange={handleBookFormChange}
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="bookAuthor">
+                  <i className="fas fa-user-pen"></i> Author
+                </label>
+                <input
+                  type="text"
+                  id="bookAuthor"
+                  name="author"
+                  className="form-control"
+                  placeholder="Author name"
+                  value={bookForm.author}
+                  onChange={handleBookFormChange}
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="bookCategory">
+                  <i className="fas fa-tag"></i> Category
+                </label>
+                <select
+                  id="bookCategory"
+                  name="category"
+                  className="form-control"
+                  value={bookForm.category}
+                  onChange={handleBookFormChange}
+                >
+                  <option value="all">All</option>
+                  <option value="featured">Featured</option>
+                  <option value="popular">Popular</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label htmlFor="bookGenre">
+                  <i className="fas fa-layer-group"></i> Genre
+                </label>
+                <input
+                  type="text"
+                  id="bookGenre"
+                  name="genre"
+                  className="form-control"
+                  placeholder="e.g. Fantasy, Romance, Mystery"
+                  value={bookForm.genre}
+                  onChange={handleBookFormChange}
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="bookRating">
+                  <i className="fas fa-star"></i> Rating
+                </label>
+                <input
+                  type="number"
+                  id="bookRating"
+                  name="rating"
+                  className="form-control"
+                  placeholder="0.0 - 5.0"
+                  min="0"
+                  max="5"
+                  step="0.1"
+                  value={bookForm.rating}
+                  onChange={handleBookFormChange}
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="bookCopies">
+                  <i className="fas fa-copy"></i> Number of Copies
+                </label>
+                <input
+                  type="number"
+                  id="bookCopies"
+                  name="copies"
+                  className="form-control"
+                  placeholder="1"
+                  min="1"
+                  value={bookForm.copies}
+                  onChange={handleBookFormChange}
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="bookStatus">
+                  <i className="fas fa-circle"></i> Status
+                </label>
+                <select
+                  id="bookStatus"
+                  name="status"
+                  className="form-control"
+                  value={bookForm.status}
+                  onChange={handleBookFormChange}
+                >
+                  <option value="available">Available</option>
+                  <option value="borrowed">Borrowed</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label htmlFor="bookImageUrl">
+                  <i className="fas fa-image"></i> Image URL
+                </label>
+                <input
+                  type="text"
+                  id="bookImageUrl"
+                  name="imageUrl"
+                  className="form-control"
+                  placeholder="https://example.com/image.jpg"
+                  value={bookForm.imageUrl}
+                  onChange={handleBookFormChange}
+                />
+              </div>
+              <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                <label htmlFor="bookDescription">
+                  <i className="fas fa-align-left"></i> Description
+                </label>
+                <textarea
+                  id="bookDescription"
+                  name="description"
+                  className="form-control"
+                  placeholder="Book description"
+                  rows="3"
+                  value={bookForm.description}
+                  onChange={handleBookFormChange}
+                />
+              </div>
+            </div>
 
-  <div className="form-actions">
-    <button type="submit" className="btn btn-primary">
-      <i className={editingBook ? "fas fa-save" : "fas fa-plus"}></i>
-      <span>{editingBook ? 'Save Changes' : 'Add Book'}</span>
-    </button>
-    {editingBook && (
-      <button
-        type="button"
-        className="btn btn-outline"
-        onClick={resetBookForm}
-      >
-        <i className="fas fa-times"></i>
-        Cancel
-      </button>
-    )}
-  </div>
-</form>
+            <div className="form-actions">
+              <button type="submit" className="btn btn-primary">
+                <i className={editingBook ? "fas fa-save" : "fas fa-plus"}></i>
+                <span>{editingBook ? 'Save Changes' : 'Add Book'}</span>
+              </button>
+              {editingBook && (
+                <button
+                  type="button"
+                  className="btn btn-outline"
+                  onClick={resetBookForm}
+                >
+                  <i className="fas fa-times"></i>
+                  Cancel
+                </button>
+              )}
+            </div>
+          </form>
 
           <div className="table-container">
             <table className="table">
@@ -1055,6 +1115,159 @@ const getStatusIcon = (status) => {
                           <button
                             className="btn btn-danger"
                             onClick={() => deleteBook(book._id)}
+                          >
+                            <i className="fas fa-trash"></i>
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        {/* Admins Management Section */}
+        <section className="section admin-section">
+          <div className="section-header">
+            <i className="fas fa-user-shield"></i>
+            <h2>Admins Management</h2>
+          </div>
+          <p className="section-description">
+            Manage admin accounts: add new admins, update information, or remove admin access.
+          </p>
+
+          <form onSubmit={handleAdminSubmit}>
+            <div className="form-grid">
+              <div className="form-group">
+                <label htmlFor="adminName">
+                  <i className="fas fa-user"></i> Name
+                </label>
+                <input
+                  type="text"
+                  id="adminName"
+                  name="name"
+                  className="form-control"
+                  placeholder="Admin name"
+                  value={adminForm.name}
+                  onChange={handleAdminFormChange}
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="adminEmail">
+                  <i className="fas fa-envelope"></i> Email
+                </label>
+                <input
+                  type="email"
+                  id="adminEmail"
+                  name="email"
+                  className="form-control"
+                  placeholder="admin@example.com"
+                  value={adminForm.email}
+                  onChange={handleAdminFormChange}
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="adminPassword">
+                  <i className="fas fa-lock"></i> Password {editingAdmin && <span style={{fontSize: '0.85em', color: '#666'}}>(leave blank to keep current)</span>}
+                </label>
+                <input
+                  type="password"
+                  id="adminPassword"
+                  name="password"
+                  className="form-control"
+                  placeholder={editingAdmin ? "Enter new password (optional)" : "Password"}
+                  value={adminForm.password}
+                  onChange={handleAdminFormChange}
+                />
+              </div>
+            </div>
+
+            <div className="form-actions">
+              <button type="submit" className="btn btn-primary">
+                <i className={editingAdmin ? "fas fa-save" : "fas fa-plus"}></i>
+                <span>{editingAdmin ? 'Save Changes' : 'Add Admin'}</span>
+              </button>
+              {editingAdmin && (
+                <button
+                  type="button"
+                  className="btn btn-outline"
+                  onClick={resetAdminForm}
+                >
+                  <i className="fas fa-times"></i>
+                  Cancel
+                </button>
+              )}
+            </div>
+          </form>
+
+          <div className="table-container">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th style={{ width: '30%' }}>
+                    <i className="fas fa-user"></i> Name
+                  </th>
+                  <th style={{ width: '30%' }}>
+                    <i className="fas fa-envelope"></i> Email
+                  </th>
+                  <th style={{ width: '20%' }}>
+                    <i className="fas fa-user-tag"></i> Role
+                  </th>
+                  <th style={{ width: '20%' }}>
+                    <i className="fas fa-cog"></i> Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {admins.length === 0 ? (
+                  <tr>
+                    <td colSpan="4" className="empty-state">
+                      <i className="fas fa-user-shield"></i>
+                      <h3>No Admins Found</h3>
+                      <p>Add your first admin above.</p>
+                    </td>
+                  </tr>
+                ) : (
+                  admins.map(admin => (
+                    <tr key={admin._id}>
+                      <td>
+                        <div className="user-info">
+                          <div className="user-avatar">
+                            <i className="fas fa-user-shield"></i>
+                          </div>
+                          <div>
+                            <div className="user-name">{admin.name}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <div className="course-info">
+                          <i className="fas fa-envelope"></i>
+                          {admin.email}
+                        </div>
+                      </td>
+                      <td>
+                        <div className="isbn-info">
+                          <i className="fas fa-user-tag"></i>
+                          {admin.role || 'admin'}
+                        </div>
+                      </td>
+                      <td>
+                        <div className="actions">
+                          <button
+                            className="btn edit"
+                            onClick={() => startAdminEdit(admin)}
+                          >
+                            <i className="fas fa-edit"></i>
+                            Edit
+                          </button>
+                          <button
+                            className="btn btn-danger"
+                            onClick={() => deleteAdmin(admin._id)}
+                            disabled={admin.email === "superadmin@example.com"}
                           >
                             <i className="fas fa-trash"></i>
                             Delete
