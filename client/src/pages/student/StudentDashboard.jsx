@@ -41,51 +41,51 @@ const StudentDashboard = () => {
       title: 'The Great Gatsby',
       author: 'F. Scott Fitzgerald',
       genre: 'Classic',
-      rating: 5.0, // Exact 5.0
+      rating: 5.0,
       category: 'featured',
       status: 'available',
       availableCopies: 3,
-      image: 'https://m.media-amazon.com/images/I/41RNSaaRjuL._SY445_SX342_.jpg'
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7a/The_Great_Gatsby_Cover_1925_Retouched.jpg/480px-The_Great_Gatsby_Cover_1925_Retouched.jpg'
     },
     {
       _id: '2',
       title: 'Harry Potter',
       author: 'J.K. Rowling',
       genre: 'Fantasy',
-      rating: 5.0, // Exact 5.0
+      rating: 5.0,
       category: 'popular',
       status: 'available',
       availableCopies: 5,
-      image: 'https://tse3.mm.bing.net/th/id/OIP._NVzEYuOraGjk-9qYSY0LwHaK9?pid=ImgDet&w=474&h=701&rs=1&o=7&rm=3'
+      image: 'https://upload.wikimedia.org/wikipedia/en/thumb/7/7a/Harry_Potter_and_the_Philosopher%27s_Stone_banner.jpg/480px-Harry_Potter_and_the_Philosopher%27s_Stone_banner.jpg'
     },
     {
       _id: '3',
       title: 'Pride and Prejudice',
       author: 'Jane Austen',
       genre: 'Romance',
-      rating: 4.5, // Exact 4.5
+      rating: 4.5,
       category: 'featured',
       status: 'available',
       availableCopies: 2,
-      image: 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=400&h=600&fit=crop'
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/03/PrideAndPrejudiceTitlePage.jpg/480px-PrideAndPrejudiceTitlePage.jpg'
     },
     {
       _id: '4',
       title: '1984',
       author: 'George Orwell',
       genre: 'Fiction',
-      rating: 4.5, // Exact 4.5
+      rating: 4.5,
       category: 'all',
       status: 'available',
       availableCopies: 4,
-      image: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=400&h=600&fit=crop'
+      image: 'https://upload.wikimedia.org/wikipedia/en/c/c3/1984first.jpg'
     },
     {
       _id: '5',
       title: 'The Hobbit',
       author: 'J.R.R. Tolkien',
       genre: 'Fantasy',
-      rating: 4.0, // Exact 4.0
+      rating: 4.0,
       category: 'popular',
       status: 'available',
       availableCopies: 3,
@@ -96,7 +96,7 @@ const StudentDashboard = () => {
       title: 'To Kill a Mockingbird',
       author: 'Harper Lee',
       genre: 'Classic',
-      rating: 4.0, // Exact 4.0
+      rating: 4.0,
       category: 'all',
       status: 'available',
       availableCopies: 2,
@@ -107,7 +107,7 @@ const StudentDashboard = () => {
       title: 'The Da Vinci Code',
       author: 'Dan Brown',
       genre: 'Mystery',
-      rating: 3.5, // Exact 3.5
+      rating: 3.5,
       category: 'popular',
       status: 'available',
       availableCopies: 4,
@@ -118,7 +118,7 @@ const StudentDashboard = () => {
       title: 'Dune',
       author: 'Frank Herbert',
       genre: 'Science Fiction',
-      rating: 3.5, // Exact 3.5
+      rating: 3.5,
       category: 'all',
       status: 'available',
       availableCopies: 3,
@@ -129,7 +129,7 @@ const StudentDashboard = () => {
       title: 'Steve Jobs',
       author: 'Walter Isaacson',
       genre: 'Biography',
-      rating: 3.0, // Exact 3.0
+      rating: 3.0,
       category: 'all',
       status: 'available',
       availableCopies: 2,
@@ -140,7 +140,7 @@ const StudentDashboard = () => {
       title: 'Sapiens',
       author: 'Yuval Noah Harari',
       genre: 'History',
-      rating: 3.0, // Exact 3.0
+      rating: 3.0,
       category: 'featured',
       status: 'available',
       availableCopies: 5,
@@ -151,7 +151,7 @@ const StudentDashboard = () => {
       title: 'The Catcher in the Rye',
       author: 'J.D. Salinger',
       genre: 'Classic',
-      rating: 2.5, // Exact 2.5
+      rating: 2.5,
       category: 'all',
       status: 'available',
       availableCopies: 3,
@@ -162,7 +162,7 @@ const StudentDashboard = () => {
       title: 'The Alchemist',
       author: 'Paulo Coelho',
       genre: 'Fiction',
-      rating: 2.5, // Exact 2.5
+      rating: 2.5,
       category: 'all',
       status: 'available',
       availableCopies: 4,
@@ -173,7 +173,7 @@ const StudentDashboard = () => {
       title: 'Two Star Book',
       author: 'Test Author',
       genre: 'Fiction',
-      rating: 2.0, // Exact 2.0
+      rating: 2.0,
       category: 'all',
       status: 'available',
       availableCopies: 1,
@@ -184,7 +184,7 @@ const StudentDashboard = () => {
       title: 'Another Two Star',
       author: 'Test Author',
       genre: 'Classic',
-      rating: 2.0, // Exact 2.0
+      rating: 2.0,
       category: 'all',
       status: 'available',
       availableCopies: 1,
@@ -195,7 +195,7 @@ const StudentDashboard = () => {
       title: 'One Point Five Star',
       author: 'Test Author',
       genre: 'Mystery',
-      rating: 1.5, // Exact 1.5
+      rating: 1.5,
       category: 'all',
       status: 'available',
       availableCopies: 1,
@@ -206,7 +206,7 @@ const StudentDashboard = () => {
       title: 'One Star Book',
       author: 'Test Author',
       genre: 'Biography',
-      rating: 1.0, // Exact 1.0
+      rating: 1.0,
       category: 'all',
       status: 'available',
       availableCopies: 1,
@@ -217,13 +217,13 @@ const StudentDashboard = () => {
       title: 'Another One Star',
       author: 'Test Author',
       genre: 'History',
-      rating: 1.0, // Exact 1.0
+      rating: 1.0,
       category: 'all',
       status: 'available',
       availableCopies: 1,
       image: 'https://images.unsplash.com/photo-1532012197267-da84d127e765?w=400&h=600&fit=crop'
     }
-  ];
+  ];  
 
   // Fetch books from database on component mount
   useEffect(() => {
@@ -244,7 +244,8 @@ const StudentDashboard = () => {
       if (result.success) {
         const booksWithImages = result.data.map(book => ({
           ...book,
-          image: book.image || 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&h=600&fit=crop'
+          image: book.image || 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&h=600&fit=crop',
+          availableCopies: book.availableCopies || 0
         }));
         setBooks(booksWithImages);
       } else {
@@ -342,20 +343,23 @@ const StudentDashboard = () => {
     return Math.round(rating * 2) / 2; // Round to nearest 0.5
   };
 
-  // Add book to cart
+  // ========== UPDATED: Add book to cart with copy check ==========
   const addToCart = (book) => {
-    if (book.status === "borrowed") {
-      showNotification('This book is currently borrowed!', 'warning');
+    // Check if book has available copies
+    if (book.availableCopies <= 0) {
+      showNotification('Book Not Available! No copies left.', 'warning');
       return;
     }
 
     const bookId = book._id;
     
+    // Check if book is already in cart
     if (addedBooks.has(bookId)) {
       showNotification('This book is already in your cart!', 'warning');
       return;
     }
 
+    // Check cart limit
     if (cart.length >= 5) {
       showNotification('Maximum 5 books allowed in cart!', 'warning');
       return;
@@ -391,7 +395,20 @@ const StudentDashboard = () => {
       const result = await response.json();
       
       if (result.success) {
-        await fetchBooks();
+        // Update local state
+        setBooks(prevBooks => 
+          prevBooks.map(book => {
+            if (book._id === bookId) {
+              return {
+                ...book,
+                availableCopies: (book.availableCopies || 0) + 1,
+                status: 'available'
+              };
+            }
+            return book;
+          })
+        );
+        
         showNotification('Book returned successfully!', 'success');
       } else {
         throw new Error(result.message || 'Failed to return book');
@@ -425,7 +442,7 @@ const StudentDashboard = () => {
   const popularBooks = sortedBooks.filter(book => book.category === 'popular');
   const allBooks = sortedBooks.filter(book => book.category === 'all');
   
-  // Get borrowed books
+  // Get borrowed books (books borrowed by current student)
   const borrowedBooks = books.filter(book => 
     book.status === "borrowed" && book.borrowedBy === studentId
   );
@@ -481,9 +498,22 @@ const StudentDashboard = () => {
       showNotification('Your cart is empty!', 'warning');
       return;
     }
+    
+    // Check if any book in cart is now unavailable
+    const unavailableBooks = cart.filter(book => {
+      const currentBook = books.find(b => b._id === book._id);
+      return !currentBook || currentBook.availableCopies <= 0;
+    });
+    
+    if (unavailableBooks.length > 0) {
+      showNotification(`Some books are no longer available. Please update your cart.`, 'warning');
+      return;
+    }
+    
     setCheckoutOpen(true);
   };
 
+  // ========== UPDATED: Confirm checkout with copy management ==========
   const confirmCheckout = async () => {
     try {
       const bookIds = cart.map(book => book._id);
@@ -502,6 +532,23 @@ const StudentDashboard = () => {
       const result = await response.json();
       
       if (result.success) {
+        // Update local books state to reflect reduced copies
+        setBooks(prevBooks => 
+          prevBooks.map(book => {
+            if (cart.some(cartBook => cartBook._id === book._id)) {
+              // Decrease available copies by 1
+              const newCopies = Math.max(0, (book.availableCopies || 0) - 1);
+              
+              return {
+                ...book,
+                availableCopies: newCopies,
+                status: newCopies === 0 ? 'unavailable' : book.status
+              };
+            }
+            return book;
+          })
+        );
+
         // Save cart data before clearing it
         const checkedOutBooks = [...cart];
         const dueDate = result.data.dueDate;
@@ -511,9 +558,6 @@ const StudentDashboard = () => {
         setCartOpen(false);
         setCart([]);
         setAddedBooks(new Set());
-        
-        // Fetch updated books
-        await fetchBooks();
         
         // Show checkout success modal
         setCheckoutSuccessData({
@@ -534,8 +578,10 @@ const StudentDashboard = () => {
     }
   };
 
-  // Get book image component
+  // ========== UPDATED: Get book image with availability badge ==========
   const getBookImage = (book) => {
+    const isAvailable = book.availableCopies > 0;
+    
     return (
       <div 
         className="book-image" 
@@ -549,33 +595,48 @@ const StudentDashboard = () => {
           {book.category === 'featured' ? <><i className="fas fa-star"></i> Featured</> : 
            book.category === 'popular' ? <><i className="fas fa-fire"></i> Popular</> : <><i className="fas fa-book"></i> New</>}
         </span>
-        {book.availableCopies > 0 && (
-          <span className="book-copies"><i className="fas fa-box"></i> {book.availableCopies} available</span>
+        {isAvailable ? (
+          <span className="book-copies available">
+            <i className="fas fa-box"></i> {book.availableCopies} available
+          </span>
+        ) : (
+          <span className="book-copies unavailable">
+            <i className="fas fa-ban"></i> Not Available
+          </span>
         )}
-        {book.status === 'borrowed' && (
-          <span className="book-borrowed"><i className="fas fa-book-reader"></i> Borrowed</span>
+        {book.status === 'borrowed' && book.borrowedBy === studentId && (
+          <span className="book-borrowed"><i className="fas fa-book-reader"></i> Borrowed by You</span>
         )}
       </div>
     );
   };
 
-  // Book card component
+  // ========== UPDATED: Book card with copy availability ==========
   const BookCard = ({ book }) => {
     const isAdded = addedBooks.has(book._id);
-    const isBorrowed = book.status === "borrowed";
+    const isBorrowedByYou = book.status === "borrowed" && book.borrowedBy === studentId;
+    const isAvailable = book.availableCopies > 0;
     
     let buttonText = 'Add to Cart';
     let buttonDisabled = false;
     let buttonClass = 'btn-add-cart';
+    let statusMessage = '';
     
     if (isAdded) {
       buttonText = <><i className="fas fa-check"></i> Added</>;
       buttonDisabled = true;
       buttonClass += ' added';
-    } else if (isBorrowed) {
-      buttonText = <><i className="fas fa-ban"></i> Borrowed</>;
+      statusMessage = 'In your cart';
+    } else if (isBorrowedByYou) {
+      buttonText = <><i className="fas fa-ban"></i> Borrowed by You</>;
       buttonDisabled = true;
       buttonClass += ' borrowed';
+      statusMessage = 'Currently borrowed by you';
+    } else if (!isAvailable) {
+      buttonText = <><i className="fas fa-times"></i> Not Available</>;
+      buttonDisabled = true;
+      buttonClass += ' unavailable';
+      statusMessage = 'No copies available';
     }
     
     return (
@@ -595,11 +656,17 @@ const StudentDashboard = () => {
               <span className="rating-value">{book.rating.toFixed(1)}</span>
             </div>
           </div>
+          {statusMessage && (
+            <div className="book-status-message">
+              <i className="fas fa-info-circle"></i> {statusMessage}
+            </div>
+          )}
           <div className="book-actions">
             <button 
               className={buttonClass}
               onClick={() => !buttonDisabled && addToCart(book)}
               disabled={buttonDisabled}
+              title={!isAvailable ? 'No copies available' : ''}
             >
               <i className="fas fa-cart-plus"></i> {buttonText}
             </button>
@@ -710,7 +777,7 @@ const StudentDashboard = () => {
                     key={book._id} 
                     className="search-result-item"
                     onClick={() => {
-                      if (book.status !== "borrowed") {
+                      if (book.availableCopies > 0 && !addedBooks.has(book._id)) {
                         addToCart(book);
                         setSearchQuery('');
                         setShowSearchResults(false);
@@ -721,7 +788,10 @@ const StudentDashboard = () => {
                       className="search-result-image"
                       style={{ backgroundImage: `url(${book.image})` }}
                     >
-                      {book.status === "borrowed" && (
+                      {book.availableCopies <= 0 && (
+                        <span className="unavailable-badge"><i className="fas fa-ban"></i> Unavailable</span>
+                      )}
+                      {book.status === "borrowed" && book.borrowedBy === studentId && (
                         <span className="borrowed-badge"><i className="fas fa-book-reader"></i> Borrowed</span>
                       )}
                     </div>
@@ -737,11 +807,10 @@ const StudentDashboard = () => {
                         <span className="search-result-rating">
                           <i className="fas fa-star"></i> {book.rating.toFixed(1)}
                         </span>
-                        {book.availableCopies > 0 && (
-                          <span className="search-result-copies">
-                            <i className="fas fa-box"></i> {book.availableCopies} left
-                          </span>
-                        )}
+                        <span className={`search-result-copies ${book.availableCopies <= 0 ? 'unavailable' : 'available'}`}>
+                          <i className={`fas ${book.availableCopies > 0 ? 'fa-box' : 'fa-ban'}`}></i> 
+                          {book.availableCopies > 0 ? `${book.availableCopies} left` : 'Unavailable'}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -846,7 +915,7 @@ const StudentDashboard = () => {
               </div>
               <div className="stat">
                 <i className="fas fa-check-circle"></i>
-                <span>{books.filter(b => b.status === 'available').length} Available</span>
+                <span>{books.filter(b => b.availableCopies > 0).length} Available</span>
               </div>
               <div className="stat">
                 <i className="fas fa-user-graduate"></i>
@@ -886,12 +955,20 @@ const StudentDashboard = () => {
             </div>
           )}
 
+          {/* Available Books Count */}
+          <div className="availability-info">
+            <i className="fas fa-info-circle"></i>
+            <span>
+              Showing {sortedBooks.filter(b => b.availableCopies > 0).length} available books out of {sortedBooks.length} total
+            </span>
+          </div>
+
           {/* Featured Books */}
           {featuredBooks.length > 0 && (
             <div className="section">
               <h2 className="section-title">
                 <i className="fas fa-star"></i>
-                Featured Books ({featuredBooks.length})
+                Featured Books ({featuredBooks.filter(b => b.availableCopies > 0).length} available)
               </h2>
               <div className="row">
                 {featuredBooks.map(book => (
@@ -906,7 +983,7 @@ const StudentDashboard = () => {
             <div className="section">
               <h2 className="section-title">
                 <i className="fas fa-fire"></i>
-                Popular This Week ({popularBooks.length})
+                Popular This Week ({popularBooks.filter(b => b.availableCopies > 0).length} available)
               </h2>
               <div className="row">
                 {popularBooks.map(book => (
@@ -921,7 +998,7 @@ const StudentDashboard = () => {
             <div className="section">
               <h2 className="section-title">
                 <i className="fas fa-book"></i>
-                All Books ({allBooks.length})
+                All Books ({allBooks.filter(b => b.availableCopies > 0).length} available)
               </h2>
               <div className="row">
                 {allBooks.map(book => (
@@ -992,6 +1069,9 @@ const StudentDashboard = () => {
                   <div className="cart-item-author">
                     <i className="fas fa-user-edit"></i> {book.author}
                   </div>
+                  <div className="cart-item-copies">
+                    <i className="fas fa-box"></i> {book.availableCopies} copies available
+                  </div>
                   <div className="cart-item-due">
                     <i className="fas fa-calendar-alt"></i> Due in 14 days
                   </div>
@@ -1049,7 +1129,8 @@ const StudentDashboard = () => {
             <div className="book-list">
               {cart.map(book => (
                 <div key={book._id} className="book-item">
-                  <i className="fas fa-book-open"></i> {book.title}
+                  <i className="fas fa-book-open"></i> {book.title} 
+                  <span className="book-copies-count">({book.availableCopies} copies left)</span>
                 </div>
               ))}
             </div>
